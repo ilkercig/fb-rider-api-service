@@ -1,0 +1,10 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/DehDehTool.Server/CopilotIndices/17.12.31.40377
+/.vs
+/FbRider.Api/.vs/DehDehTool.Server
+/FbRider.Api/bin/Debug/net8.0
+/FbRider.Api/obj
+/FbRider.Api/logs
