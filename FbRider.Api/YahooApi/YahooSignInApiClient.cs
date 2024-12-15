@@ -9,19 +9,18 @@ using Microsoft.Extensions.Options;
 
 namespace FbRider.Api.YahooApi;
 
-public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configuration, IOptions<SecretsOptions> options) : YahooApiClientBase(httpClient),
+public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configuration) : YahooApiClientBase(httpClient),
     IYahooSignInApiClient
 {
-    public const string ClientId =
-        "dj0yJmk9VGRCcXN2VG1NM0pPJmQ9WVdrOVpEWmFTWEJuZURrbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PTJh";
-
     public const string RedirectUriIsNotSetInTheConfiguration = "Redirect URI is not set in the configuration.";
+    public const string ClientIdIsNotSetInTheConfiguration = "Client Id is not set in the configuration.";
+    public const string ClientSecretIsNotSetInTheConfiguration = "Client Id is not set in the configuration.";
 
     protected override YahooApiType ApiType => YahooApiType.SignIn;
 
     public async Task<TokenResponse> GetAccessToken(string code)
     {
-        var redirectUri = configuration["YahooAuthSettings:RedirectUri"];
+        var redirectUri = configuration["YahooRedirectUri"];
         if (string.IsNullOrEmpty(redirectUri))
             throw new InvalidOperationException(RedirectUriIsNotSetInTheConfiguration);
 
@@ -67,13 +66,21 @@ public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configur
 
     private async Task<TokenResponse> GetAccessToken(FormUrlEncodedContent form)
     {
+        var clientId = configuration["YahooClientId"];
+        if (string.IsNullOrEmpty(clientId))
+            throw new InvalidOperationException(ClientIdIsNotSetInTheConfiguration);
+
+        var clientSecret = configuration["YahooClientSecret"];
+        if (string.IsNullOrEmpty(clientSecret))
+            throw new InvalidOperationException(ClientSecretIsNotSetInTheConfiguration);
+
         var endPoint = YahooApiUrls.TokenUrl;
         var request = new HttpRequestMessage(HttpMethod.Post, endPoint);
         request.Content = form;
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
         var credentials =
             Convert.ToBase64String(
-                Encoding.ASCII.GetBytes($"{ClientId}:{options.Value.ClientSecret}"));
+                Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
         return await SendRequest<TokenResponse>(request);
     }

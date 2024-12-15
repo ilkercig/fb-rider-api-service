@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: FbRider.Api/Dockerfile
+    ports:
+      - "8080:8080" # Expose the API on host port 8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - YahooClientId=${YahooClientId}
+      - YahooClientSecret=${YahooClientSecret}
+      - YahooRedirectUri=${YahooRedirectUri}
+      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Database=FbRiderDb;User Id=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - fb-rider-network
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    ports:
+      - "5432:5432" # Expose PostgreSQL on host port 5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: FbRiderDb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - fb-rider-network
+
+networks:
+  fb-rider-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

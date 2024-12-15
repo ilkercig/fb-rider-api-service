@@ -58,19 +58,6 @@ if (builder.Environment.IsDevelopment())
 {
     builder.Configuration.AddUserSecrets<Program>();
 }
-else if (builder.Environment.IsProduction())
-{
-    // Add production services
-}
-
-// Bind the secrets to SecretsOptions and validate them
-builder.Services.Configure<SecretsOptions>(
-    builder.Configuration.GetSection("Secrets")
-);
-builder.Services.AddOptions<SecretsOptions>()
-    .Bind(builder.Configuration.GetSection("Secrets"))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IYahooSignInApiClient, YahooSignInApiClient>();

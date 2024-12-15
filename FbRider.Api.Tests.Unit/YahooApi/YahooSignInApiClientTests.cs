@@ -29,14 +29,14 @@ public class YahooSignInApiClientTests
             .Setup("Dispose", ItExpr.IsAny<bool>());
         _httpClient = new HttpClient(_httpMessageHandlerMock.Object);
         _configurationMock = new Mock<IConfiguration>();
-        _optionsMock = new Mock<IOptions<SecretsOptions>>();
 
-        _secretsOptions = new SecretsOptions { ClientSecret = ClientSecret };
-        _optionsMock.Setup(o => o.Value).Returns(_secretsOptions);
 
-        _configurationMock.Setup(c => c["YahooAuthSettings:RedirectUri"]).Returns(RedirectUri);
 
-        _client = new YahooSignInApiClient(_httpClient, _configurationMock.Object, _optionsMock.Object);
+        _configurationMock.Setup(c => c["YahooRedirectUri"]).Returns(RedirectUri);
+        _configurationMock.Setup(c => c["YahooClientId"]).Returns(ClientId);
+        _configurationMock.Setup(c => c["YahooClientSecret"]).Returns(ClientSecret);
+
+        _client = new YahooSignInApiClient(_httpClient, _configurationMock.Object);
 
         // Arrange
         _tokenResponse = new TokenResponse
@@ -48,18 +48,14 @@ public class YahooSignInApiClientTests
             IdToken = "user-id-token"
         };
     }
-
     private HttpClient _httpClient;
     private Mock<HttpMessageHandler> _httpMessageHandlerMock;
-
     private Mock<IConfiguration> _configurationMock;
-    private Mock<IOptions<SecretsOptions>> _optionsMock;
     private YahooSignInApiClient _client;
-
+    public string ClientId = "test-client-id";
     private const string ValidCode = "valid-code";
     private const string ClientSecret = "test-client-secret";
     private const string RedirectUri = "https://localhost/callback";
-    private SecretsOptions _secretsOptions;
     private TokenResponse _tokenResponse;
 
     [Test]
@@ -73,7 +69,7 @@ public class YahooSignInApiClientTests
         };
 
         var authHeader =
-            Convert.ToBase64String(Encoding.ASCII.GetBytes($"{YahooSignInApiClient.ClientId}:{ClientSecret}"));
+            Convert.ToBase64String(Encoding.ASCII.GetBytes($"{ClientId}:{ClientSecret}"));
 
         _httpMessageHandlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync",
@@ -113,7 +109,7 @@ public class YahooSignInApiClientTests
 
 
         var authHeader =
-            Convert.ToBase64String(Encoding.ASCII.GetBytes($"{YahooSignInApiClient.ClientId}:{ClientSecret}"));
+            Convert.ToBase64String(Encoding.ASCII.GetBytes($"{ClientId}:{ClientSecret}"));
 
         _httpMessageHandlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync",
@@ -146,7 +142,7 @@ public class YahooSignInApiClientTests
     {
         // Arrange
         const string code = "test_code";
-        _configurationMock.Setup(c => c["YahooAuthSettings:RedirectUri"]).Returns((string)null);
+        _configurationMock.Setup(c => c["YahooRedirectUri"]).Returns((string)null);
 
         // Act & Assert
         var ex = Assert.ThrowsAsync<InvalidOperationException>(() => _client.GetAccessToken(code));
