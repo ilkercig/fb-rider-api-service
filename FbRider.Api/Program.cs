@@ -1,6 +1,5 @@
 using FbRider.Api;
 using FbRider.Api.Middlewares;
-using FbRider.Api.Options;
 using FbRider.Api.Repositories;
 using FbRider.Api.Services;
 using FbRider.Api.YahooApi;
@@ -26,14 +25,24 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog(); // Replace default logger with Serilog
 
+var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
+Log.Logger.Information($"Frontend URL: {frontendUrl}");
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy => policy.WithOrigins(frontendUrl).AllowAnyMethod().AllowAnyHeader()
+            .AllowCredentials()); // Allow credentials (cookies));
+});
 
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.HttpOnly = true; // Ensures the cookie is not accessible via JavaScript
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Requires HTTPS
-        options.Cookie.SameSite = SameSiteMode.Lax; // Lax for cross-site requests with cookies
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Allow cookies over HTTP in local development
+        options.Cookie.SameSite = SameSiteMode.Strict; // Lax for cross-site requests with cookies
         options.ExpireTimeSpan = TimeSpan.FromDays(30); // Cookie expires in 30 days
         options.Events = new CookieAuthenticationEvents
         {
@@ -54,10 +63,7 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true; // Mark the cookie as essential
 });
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration.AddUserSecrets<Program>();
-}
+if (builder.Environment.IsDevelopment()) builder.Configuration.AddUserSecrets<Program>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IYahooSignInApiClient, YahooSignInApiClient>();
@@ -69,13 +75,11 @@ builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    //var environment = builder.Environment.EnvironmentName; 
+    Log.Logger.Information($"Connection string: {connectionString}");
     options.UseNpgsql(connectionString);
-    
 });
 
 var app = builder.Build();
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
@@ -86,6 +90,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowFrontend");
 app.UseSerilogRequestLogging(); // Log HTTP requests
 app.UseHttpsRedirection();
 app.UseSession(); // Add session middleware

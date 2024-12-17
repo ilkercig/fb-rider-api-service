@@ -12,3 +12,6 @@
 /FbRider.Api.Tests.Unit/obj/Debug/net8.0
 /FbRider.Api.Tests.Unit/obj
 /FbRider.Api.Service.sln.DotSettings.user
+/.env
+/FbRider.Api/FbRider.Api.csproj.user
+/certs
