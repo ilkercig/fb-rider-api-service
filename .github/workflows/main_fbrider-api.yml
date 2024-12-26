@@ -31,7 +31,6 @@ jobs:
       with:
         push: true
         tags: fbriderapi.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_c4f89d9a0b2b434a825dafde352ff1a1 }}/fbrider-api:${{ github.sha }}
-        context: ./FbRider.Api
         file: ./FbRider.Api/Dockerfile
 
   deploy:
