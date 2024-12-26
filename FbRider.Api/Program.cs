@@ -42,7 +42,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.Cookie.HttpOnly = true; // Ensures the cookie is not accessible via JavaScript
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Allow cookies over HTTP in local development
-        options.Cookie.SameSite = SameSiteMode.Strict; // Lax for cross-site requests with cookies
+        options.Cookie.SameSite = SameSiteMode.Lax; // Lax for cross-site requests with cookies
         options.ExpireTimeSpan = TimeSpan.FromDays(30); // Cookie expires in 30 days
         options.Events = new CookieAuthenticationEvents
         {
