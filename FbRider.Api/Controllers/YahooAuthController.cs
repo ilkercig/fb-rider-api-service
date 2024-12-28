@@ -51,12 +51,22 @@ namespace FbRider.Api.Controllers
             var token = await yahooSignInApiClient.GetAccessToken(request.Code);
             // Decode the ID token and validate claims
             var idToken = token.IdToken;
-            var validatedToken = ValidateIdToken(idToken, request.Nonce);
-            if (validatedToken == null)
+            string userEmail;
+            if (idToken != null)
             {
-                return Unauthorized(InvalidIdToken);
+                var validatedToken = ValidateIdToken(idToken, request.Nonce);
+                if (validatedToken == null)
+                {
+                    return Unauthorized(InvalidIdToken);
+                }
+                userEmail = validatedToken.Claims.Single(c => c.Type == "email").Value;
             }
-            string userEmail = validatedToken.Claims.Single(c => c.Type == "email").Value;
+            else
+            {
+               userEmail = (await yahooSignInApiClient.GetCurrentUser(token.AccessToken)).Email;
+            }
+
+            
             var userToken = new UserToken
             {
                 Email = userEmail,

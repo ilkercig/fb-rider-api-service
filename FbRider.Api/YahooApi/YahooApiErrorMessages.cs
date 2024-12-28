@@ -7,5 +7,7 @@
         public const string DeserializationFailed = "Failed to deserialize the Yahoo API response.";
         public const string ResponseNotSuccessful = "Yahoo API returned an unsuccessful response.";
         public static string LeagueNotFound = "The league was not found.";
+        public static string FantasyUserNotFound = "The fantasy user was not found.";
+        public static string FantasyUserGamesNotFound = "The fantasy user games were not found.";
     }
 }

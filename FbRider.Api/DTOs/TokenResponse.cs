@@ -17,6 +17,6 @@ namespace FbRider.Api.DTOs
         public required string TokenType { get; init; }
 
         [JsonPropertyName("id_token")]
-        public required string IdToken { get; init; }
+        public string? IdToken { get; init; }
     }
 }

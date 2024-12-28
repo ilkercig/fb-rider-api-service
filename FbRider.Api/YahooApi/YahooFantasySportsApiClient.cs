@@ -17,10 +17,23 @@ namespace FbRider.Api.YahooApi
             return result.League;
         }
 
-        public async Task<FantasyContent> GetFantasyContentAsync(string accessToken, string url, string resourceKey,
-            string subResources)
+        public async Task<Games> GetUserGames(string accessToken)
         {
-            url = $"{url}/{resourceKey};out={subResources}";
+            var result = await GetFantasyContentAsync(accessToken, YahooApiUrls.UserGamesUrl);
+            if (result.Users?.User == null)
+                throw new YahooApiException(YahooApiErrorMessages.FantasyUserNotFound, YahooApiUrls.UserGamesUrl, YahooApiType.FantasySports);
+            if (result.Users.User.Games == null) 
+                throw new YahooApiException(YahooApiErrorMessages.FantasyUserGamesNotFound, YahooApiUrls.UserGamesUrl, YahooApiType.FantasySports);
+            return result.Users.User.Games;
+        }
+
+        public async Task<FantasyContent> GetFantasyContentAsync(string accessToken, string url, string? resourceKey=null,
+            string? subResources=null)
+        {
+            if (resourceKey != null && subResources != null)
+                url = $"{url}/{resourceKey};out={subResources}";
+            else if (resourceKey != null)
+                url = $"{url}/{resourceKey}";
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             var result = await base.SendRequest<FantasyContent>(request);
