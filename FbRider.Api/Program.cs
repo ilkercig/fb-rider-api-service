@@ -1,4 +1,6 @@
 using FbRider.Api;
+using FbRider.Api.Domain.Services;
+using FbRider.Api.Mapping;
 using FbRider.Api.Middlewares;
 using FbRider.Api.Repositories;
 using FbRider.Api.Services;
@@ -8,9 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -64,13 +63,15 @@ builder.Services.AddSession(options =>
 });
 
 if (builder.Environment.IsDevelopment()) builder.Configuration.AddUserSecrets<Program>();
-
+builder.Services.AddAutoMapper(typeof(YahooApiResourceMappingProfile));
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IYahooSignInApiClient, YahooSignInApiClient>();
 builder.Services.AddSingleton<IYahooFantasySportsApiClient, YahooFantasySportsApiClient>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+builder.Services.AddScoped<IAllPlayService, AllPlayService>();
+builder.Services.AddScoped<IAllPlayScoreService, AllPlayScoreService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {

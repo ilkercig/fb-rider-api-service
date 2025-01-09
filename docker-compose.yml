@@ -1,57 +1,34 @@
 version: '3.8'
 
 services:
-  # Service for applying migrations
-  db-migrations:
-    build:
-      context: .
-      dockerfile: FbRider.Api/migrations.Dockerfile
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Database=FbRiderDb;User Id=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-    depends_on:
-      - postgres
-    networks:
-      - fb-rider-network
-    entrypoint: ["/wait-for-it.sh", "postgres:5432", "--", "dotnet", "ef", "database", "update"]  # Wait for DB to be ready, then run migration
-
-  # Main API service
-  api:
-    build:
-      context: .
-      dockerfile: FbRider.Api/Dockerfile
-    ports:
-      - "8080:8080" # Expose the API on host port 8080
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - YahooClientId=${YahooClientId}
-      - YahooClientSecret=${YahooClientSecret}
-      - YahooRedirectUri=${YahooRedirectUri}
-      - FrontendUrl=${FrontendUrl}
-      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Database=FbRiderDb;User Id=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-    depends_on:
-      - postgres
-      - db-migrations # Ensure migrations are done before API starts
-    networks:
-      - fb-rider-network
-
-  # PostgreSQL service
   postgres:
-    image: postgres:15
+    image: postgres:latest
     container_name: postgres
-    ports: []
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: FbRiderDb
+      POSTGRES_USER: fbrideradmin
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: fbrider
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - fb-rider-network
+      - fbrider-network
 
-networks:
-  fb-rider-network:
-    driver: bridge
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - fbrider-network
 
 volumes:
   postgres-data:
+  mongo-data:
+
+networks:
+  fbrider-network:
+    driver: bridge

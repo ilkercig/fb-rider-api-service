@@ -1,10 +1,12 @@
-﻿using FbRider.Api.DTOs.Resources;
-
-namespace FbRider.Api.YahooApi;
+﻿namespace FbRider.Api.YahooApi;
 
 public interface IYahooFantasySportsApiClient
 {
     Task<League> GetLeague(string accessToken, string leagueKey);
 
-    Task<Games> GetUserGames(string accessToken);
+    Task<Game[]> GetUserGames(string accessToken);
+
+    Task<Team> GetTeam(string accessToken, string teamKey);
+
+    Task<TeamStatsResource> GetTeamStatsByWeek(string accessToken, string teamKey, int week);
 }
