@@ -73,6 +73,9 @@ builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
 builder.Services.AddScoped<IAllPlayService, AllPlayService>();
 builder.Services.AddScoped<IAllPlayScoreService, AllPlayScoreService>();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -99,7 +102,7 @@ app.UseAuthentication(); // Add authentication middleware
 app.UseAuthorization();
 
 app.MapControllers();
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseExceptionHandler();
 app.UseMiddleware<TokenRefreshMiddleware>();
 
 app.Run();
