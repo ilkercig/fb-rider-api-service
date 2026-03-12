@@ -1,26 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace FbRider.Api.Models
 {
     public class UserToken
     {
-        [Key]
-        public int Id { get; set; }
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
 
-        [Required]
-        [EmailAddress]
-        [MaxLength(256)]
+        [BsonElement("Email")]
         public required string Email { get; set; }
 
-        [Required]
-        [MaxLength(2000)]
         public required string AccessToken { get; set; }
 
-        [Required]
-        [MaxLength(2000)]
         public required string RefreshToken { get; set; }
 
-        [Required]
         public required DateTimeOffset TokenExpiration { get; set; }
 
         public DateTimeOffset? CreatedDate { get; set; }

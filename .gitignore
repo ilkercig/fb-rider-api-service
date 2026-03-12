@@ -1,17 +1,34 @@
 ﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+# .NET and Rider .gitignore
 ################################################################################
 
-/.vs/DehDehTool.Server/CopilotIndices/17.12.31.40377
-/.vs
-/FbRider.Api/.vs/DehDehTool.Server
-/FbRider.Api/bin/Debug/net8.0
-/FbRider.Api/obj
-/FbRider.Api/logs
-/FbRider.Api.Tests.Unit/bin/Debug/net8.0
-/FbRider.Api.Tests.Unit/obj/Debug/net8.0
-/FbRider.Api.Tests.Unit/obj
-/FbRider.Api.Service.sln.DotSettings.user
-/.env
-/FbRider.Api/FbRider.Api.csproj.user
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]ogs/
+
+# IDE files (Rider, Visual Studio, VS Code)
+.idea/
+.vs/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+# Secrets and environment
+.env
+.env.*
+! .env.example
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Certificates
 /certs
+
+# Others
+/FbRider.Api.Service.sln.DotSettings.user

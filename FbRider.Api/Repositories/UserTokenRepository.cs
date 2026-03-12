@@ -1,63 +1,53 @@
 ﻿using FbRider.Api.Models;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 
 namespace FbRider.Api.Repositories
 {
-    public class UserTokenRepository(ApplicationDbContext dbContext) : IUserTokenRepository
+    public class UserTokenRepository : IUserTokenRepository
     {
+        private readonly IMongoCollection<UserToken> _userTokens;
+
+        public UserTokenRepository(IConfiguration configuration)
+        {
+            var connectionString = configuration.GetConnectionString("MongoConnection");
+            var client = new MongoClient(connectionString);
+            var database = client.GetDatabase("FbRiderDb");
+            _userTokens = database.GetCollection<UserToken>("UserTokens");
+        }
+
         public async Task<UserToken> GetUserTokenAsync(string userEmail)
         {
-            var userToken = await dbContext.UserTokens.SingleOrDefaultAsync(ut => ut.Email == userEmail);
+            var userToken = await _userTokens.Find(ut => ut.Email == userEmail).FirstOrDefaultAsync();
             if (userToken == null)
             {
                 throw new KeyNotFoundException($"UserToken with user email '{userEmail}' was not found.");
             }
             return userToken;
-
         }
 
         public async Task AddOrUpdateUserTokenAsync(UserToken userToken)
         {
-            // Check if a token already exists for the user's email
-            var existingToken = await dbContext.UserTokens
-                .FirstOrDefaultAsync(ut => ut.Email == userToken.Email);
+            var filter = Builders<UserToken>.Filter.Eq(ut => ut.Email, userToken.Email);
+            var existingToken = await _userTokens.Find(filter).FirstOrDefaultAsync();
 
             if (existingToken == null)
             {
-                // Initialize created and modified dates for a new token
                 userToken.CreatedDate = DateTimeOffset.UtcNow;
                 userToken.ModifiedDate = DateTimeOffset.UtcNow;
-
-                // Add the new token to the database
-                await dbContext.UserTokens.AddAsync(userToken);
+                await _userTokens.InsertOneAsync(userToken);
             }
             else
             {
-                // Update the existing token's properties
-                existingToken.AccessToken = userToken.AccessToken;
-                existingToken.RefreshToken = userToken.RefreshToken;
-                existingToken.TokenExpiration = userToken.TokenExpiration;
-
-                // Update only the modified date for the existing token
-                existingToken.ModifiedDate = DateTimeOffset.UtcNow;
-
-                dbContext.UserTokens.Update(existingToken); // Explicitly marking as updated
+                userToken.Id = existingToken.Id; // Keep the same ID
+                userToken.CreatedDate = existingToken.CreatedDate;
+                userToken.ModifiedDate = DateTimeOffset.UtcNow;
+                await _userTokens.ReplaceOneAsync(filter, userToken);
             }
-
-            // Save changes to the database
-            await dbContext.SaveChangesAsync();
         }
-
 
         public async Task RemoveUserTokenAsync(string userEmail)
         {
-            var userToken = await dbContext.UserTokens.FirstOrDefaultAsync(ut => ut.Email == userEmail);
-            if (userToken != null)
-            {
-                dbContext.UserTokens.Remove(userToken);
-                await dbContext.SaveChangesAsync();
-            }
+            await _userTokens.DeleteOneAsync(ut => ut.Email == userEmail);
         }
     }
-
 }

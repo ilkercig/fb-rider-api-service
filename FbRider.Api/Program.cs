@@ -6,7 +6,6 @@ using FbRider.Api.Repositories;
 using FbRider.Api.Services;
 using FbRider.Api.YahooApi;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,12 +75,12 @@ builder.Services.AddScoped<IAllPlayScoreService, AllPlayScoreService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    Log.Logger.Information($"Connection string: {connectionString}");
-    options.UseNpgsql(connectionString);
-});
+// builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// {
+//     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+//     Log.Logger.Information($"Connection string: {connectionString}");
+//     options.UseNpgsql(connectionString);
+// });
 
 var app = builder.Build();
 app.UseDefaultFiles();
