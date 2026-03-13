@@ -9,9 +9,9 @@ using FbRider.Api.Domain.Models;
 using FbRider.Api.Mapping;
 using FbRider.Api.Tests.Unit.Data.Builders;
 using FbRider.Api.Utils;
-using Manager = FbRider.Api.YahooApi.Manager;
-using RosterPosition = FbRider.Api.YahooApi.RosterPosition;
-using FbRider.Api.YahooApi;
+using Manager = FbRider.YahooApi.Manager;
+using RosterPosition = FbRider.YahooApi.RosterPosition;
+using FbRider.YahooApi;
 
 namespace FbRider.Api.Tests.Unit.Mappings
 {

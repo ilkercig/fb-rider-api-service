@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 using FbRider.Api.Services;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 

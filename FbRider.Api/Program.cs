@@ -1,10 +1,9 @@
 using FbRider.Api;
-using FbRider.Api.Domain.Services;
 using FbRider.Api.Mapping;
 using FbRider.Api.Middlewares;
 using FbRider.Api.Repositories;
 using FbRider.Api.Services;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Serilog;
 
@@ -69,8 +68,6 @@ builder.Services.AddSingleton<IYahooFantasySportsApiClient, YahooFantasySportsAp
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
-builder.Services.AddScoped<IAllPlayService, AllPlayService>();
-builder.Services.AddScoped<IAllPlayScoreService, AllPlayScoreService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

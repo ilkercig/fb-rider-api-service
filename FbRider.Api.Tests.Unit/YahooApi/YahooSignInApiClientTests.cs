@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using FbRider.Api.DTOs;
 using FbRider.Api.Options;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Moq;

@@ -5,7 +5,7 @@ using FbRider.Api.Controllers;
 using FbRider.Api.DTOs;
 using FbRider.Api.Models;
 using FbRider.Api.Services;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;

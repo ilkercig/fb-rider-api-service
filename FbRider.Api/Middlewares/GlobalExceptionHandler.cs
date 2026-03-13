@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Xml.Serialization;
 using FbRider.Api.DTOs;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Diagnostics;

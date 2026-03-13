@@ -2,7 +2,7 @@
 using AutoMapper;
 using FbRider.Api.Domain.Models;
 using FbRider.Api.Utils;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 
 namespace FbRider.Api.Services;
 

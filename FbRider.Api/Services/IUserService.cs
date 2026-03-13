@@ -1,4 +1,4 @@
-﻿using FbRider.Api.DTOs;
+﻿using FbRider.YahooApi;
 using FbRider.Api.Models;
 
 namespace FbRider.Api.Services;

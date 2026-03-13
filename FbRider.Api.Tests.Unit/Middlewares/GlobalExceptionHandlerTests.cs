@@ -5,7 +5,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using FbRider.Api.DTOs;
 using FbRider.Api.Middlewares;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Moq;

@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using FbRider.Api.Domain.Models;
 using FbRider.Api.Utils;
-using FbRider.Api.YahooApi;
-using ManagerResource = FbRider.Api.YahooApi.Manager;
+using FbRider.YahooApi;
+using ManagerResource = FbRider.YahooApi.Manager;
 using Manager = FbRider.Api.Domain.Models.Manager;
 using RosterPosition = FbRider.Api.Domain.Models.RosterPosition;
-using RosterPositionResource = FbRider.Api.YahooApi.RosterPosition;
+using RosterPositionResource = FbRider.YahooApi.RosterPosition;
 
 namespace FbRider.Api.Mapping;
 

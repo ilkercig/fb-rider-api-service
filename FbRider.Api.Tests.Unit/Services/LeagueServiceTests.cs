@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FbRider.Api.Services;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using NuGet.Frameworks;
 using System.Xml.Linq;

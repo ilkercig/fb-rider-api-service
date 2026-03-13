@@ -1,7 +1,6 @@
-﻿using FbRider.Api.DTOs;
-using FbRider.Api.Models;
+﻿using FbRider.Api.Models;
 using FbRider.Api.Repositories;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 
 namespace FbRider.Api.Services
 {

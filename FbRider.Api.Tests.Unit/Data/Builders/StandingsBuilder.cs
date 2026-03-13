@@ -1,4 +1,4 @@
-﻿using FbRider.Api.YahooApi;
+﻿using FbRider.YahooApi;
 
 namespace FbRider.Api.Tests.Unit.Data.Builders;
 

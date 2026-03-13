@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FbRider.Api\FbRider.Api.csproj" />
+    <ProjectReference Include="..\FbRider.AllPlay\FbRider.AllPlay.csproj" />
   </ItemGroup>
 
   <ItemGroup>

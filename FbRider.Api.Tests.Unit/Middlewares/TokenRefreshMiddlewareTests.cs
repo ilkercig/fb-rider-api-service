@@ -3,7 +3,7 @@ using FbRider.Api.DTOs;
 using FbRider.Api.Middlewares;
 using FbRider.Api.Models;
 using FbRider.Api.Services;
-using FbRider.Api.YahooApi;
+using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
