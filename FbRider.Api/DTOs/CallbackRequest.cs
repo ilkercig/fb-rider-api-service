@@ -1,8 +1,12 @@
-namespace FbRider.Api.DTOs
+using System.ComponentModel.DataAnnotations;
+
+namespace FbRider.Api.DTOs;
+
+public class CallbackRequest
 {
-    public class CallbackRequest
-    {
-        public required string Code { get; set; }
-        public required string Nonce { get; set; }
-    }
+    [Required]
+    public required string Code { get; set; }
+
+    [Required]
+    public required string Nonce { get; set; }
 }

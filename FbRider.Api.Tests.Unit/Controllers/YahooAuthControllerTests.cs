@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -47,31 +48,29 @@ public class YahooAuthControllerTests
     private BearerToken _bearerToken;
 
     [Test]
-    public async Task Callback_ShouldReturnBadRequest_WhenCodeIsMissing()
+    public void CallbackRequest_ShouldFailValidation_WhenCodeIsEmpty()
     {
-        // Arrange
         var request = new CallbackRequest { Code = string.Empty, Nonce = ValidNonce };
+        var context = new ValidationContext(request);
+        var results = new List<ValidationResult>();
 
-        // Act
-        var result = await _controller.Callback(request);
+        var isValid = Validator.TryValidateObject(request, context, results, validateAllProperties: true);
 
-        // Assert
-        Assert.IsInstanceOf<BadRequestObjectResult>(result);
-        var badRequest = result as BadRequestObjectResult;
-        Assert.AreEqual(YahooAuthController.AuthenticationCodeIsMissing, badRequest?.Value);
+        Assert.IsFalse(isValid);
+        Assert.IsTrue(results.Any(r => r.MemberNames.Contains(nameof(CallbackRequest.Code))));
     }
 
     [Test]
-    public async Task Callback_ShouldReturnBadRequest_WhenNonceIsMissing()
+    public void CallbackRequest_ShouldFailValidation_WhenNonceIsEmpty()
     {
-        // Arrange
         var request = new CallbackRequest { Code = "valid-code", Nonce = string.Empty };
-        // Act
-        var result = await _controller.Callback(request);
-        // Assert
-        Assert.IsInstanceOf<BadRequestObjectResult>(result);
-        var badRequest = result as BadRequestObjectResult;
-        Assert.AreEqual(YahooAuthController.NonceIsMissing, badRequest?.Value);
+        var context = new ValidationContext(request);
+        var results = new List<ValidationResult>();
+
+        var isValid = Validator.TryValidateObject(request, context, results, validateAllProperties: true);
+
+        Assert.IsFalse(isValid);
+        Assert.IsTrue(results.Any(r => r.MemberNames.Contains(nameof(CallbackRequest.Nonce))));
     }
 
     [Test]
@@ -110,7 +109,7 @@ public class YahooAuthControllerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _controller.Callback(request);
+        var result = await _controller.Callback(request, CancellationToken.None);
 
         // Assert
         Assert.IsInstanceOf<OkObjectResult>(result);
@@ -145,10 +144,13 @@ public class YahooAuthControllerTests
             .ReturnsAsync(_bearerToken);
 
         // Act
-        var result = await _controller.Callback(request);
+        var result = await _controller.Callback(request, CancellationToken.None);
 
         // Assert
-        Assert.IsInstanceOf<UnauthorizedObjectResult>(result);
+        Assert.IsInstanceOf<ObjectResult>(result);
+        var problemResult = result as ObjectResult;
+        Assert.AreEqual(StatusCodes.Status401Unauthorized, problemResult?.StatusCode);
+        Assert.IsInstanceOf<ProblemDetails>(problemResult?.Value);
     }
 
 
@@ -169,7 +171,7 @@ public class YahooAuthControllerTests
             .ReturnsAsync(userProfile);
 
         // Act
-        var result = await _controller.Me();
+        var result = await _controller.Me(CancellationToken.None);
 
         // Assert
         Assert.IsNotNull(result);
@@ -216,7 +218,7 @@ public class YahooAuthControllerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _controller.Logout();
+        var result = await _controller.Logout(CancellationToken.None);
 
         // Assert
         Assert.IsInstanceOf<OkResult>(result);

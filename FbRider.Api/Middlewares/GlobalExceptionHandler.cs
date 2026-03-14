@@ -6,18 +6,23 @@ using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FbRider.Api.Middlewares;
 
 public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
-    // Error message constants
     public const string YahooApiErrorTitle = "Yahoo API error";
     public const string YahooApiErrorMessage = "An error occurred while processing your request.";
     public const string OAuthErrorTitle = "OAuth error";
     public const string GenericErrorTitle = "An error occurred";
     public const string GenericErrorMessage = "An internal server error occurred. Please try again later.";
     public const string LogUnhandledException = "An unhandled exception occurred.";
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -52,128 +57,111 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 
     private async Task HandleYahooApiValidationExceptionAsync(HttpContext context, YahooApiValidationException ex, CancellationToken cancellationToken)
     {
-        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-        context.Response.ContentType = "application/json";
+        var problem = CreateProblemDetails(
+            (int)HttpStatusCode.BadRequest,
+            YahooApiErrorTitle,
+            ex.Message);
 
-        var apiErrorResponse = new ApiErrorResponse()
-        {
-            Error = YahooApiErrorTitle,
-            Message = ex.Message
-        };
-
-        await context.Response.WriteAsync(JsonSerializer.Serialize(apiErrorResponse), cancellationToken);
+        await WriteProblemDetailsAsync(context, problem, cancellationToken);
     }
 
     private async Task HandleYahooFantasySportsExceptionAsync(HttpContext context, YahooFantasySportsException ex, CancellationToken cancellationToken)
     {
-        var apiErrorResponse = new ApiErrorResponse()
-        {
-            Error = YahooApiErrorTitle,
-            Message = YahooApiErrorMessage
-        };
+        ProblemDetails problem;
 
         if (ex is { StatusCode: HttpStatusCode.BadRequest })
         {
-            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            ExtractYahooApiError(ex.ResponseContent, apiErrorResponse);
+            var (title, detail) = ExtractYahooApiError(ex.ResponseContent);
+            problem = CreateProblemDetails((int)HttpStatusCode.BadRequest, title, detail);
         }
         else if (ex is { StatusCode: HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized })
         {
-            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            apiErrorResponse.Error = "User is not signed in";
+            problem = CreateProblemDetails((int)HttpStatusCode.Unauthorized, "User is not signed in", YahooApiErrorMessage);
             if (context.User.Identity is { IsAuthenticated: true })
-            {
                 await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            }
         }
         else
         {
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            problem = CreateProblemDetails((int)HttpStatusCode.InternalServerError, YahooApiErrorTitle, YahooApiErrorMessage);
         }
 
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync(JsonSerializer.Serialize(apiErrorResponse), cancellationToken);
+        await WriteProblemDetailsAsync(context, problem, cancellationToken);
     }
 
     private async Task HandleYahooSignInExceptionAsync(HttpContext context, YahooSignInException ex, CancellationToken cancellationToken)
     {
-        var apiErrorResponse = new ApiErrorResponse()
-        {
-            Error = YahooApiErrorTitle,
-            Message = YahooApiErrorMessage
-        };
+        ProblemDetails problem;
 
         if (ex is { StatusCode: HttpStatusCode.BadRequest })
         {
-            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            ExtractOAuthError(ex.ResponseContent, apiErrorResponse);
+            var (title, detail) = ExtractOAuthError(ex.ResponseContent);
+            problem = CreateProblemDetails((int)HttpStatusCode.BadRequest, title, detail);
         }
         else if (ex is { StatusCode: HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized })
         {
-            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            apiErrorResponse.Error = "User is not signed in";
+            problem = CreateProblemDetails((int)HttpStatusCode.Unauthorized, "User is not signed in", YahooApiErrorMessage);
             if (context.User.Identity is { IsAuthenticated: true })
-            {
                 await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            }
         }
         else
         {
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            problem = CreateProblemDetails((int)HttpStatusCode.InternalServerError, YahooApiErrorTitle, YahooApiErrorMessage);
         }
 
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync(JsonSerializer.Serialize(apiErrorResponse), cancellationToken);
+        await WriteProblemDetailsAsync(context, problem, cancellationToken);
     }
 
-    private void ExtractOAuthError(string responseContent, ApiErrorResponse errorResponse)
+    private async Task HandleGenericExceptionAsync(HttpContext context, CancellationToken cancellationToken)
+    {
+        var problem = CreateProblemDetails(
+            (int)HttpStatusCode.InternalServerError,
+            GenericErrorTitle,
+            GenericErrorMessage);
+
+        await WriteProblemDetailsAsync(context, problem, cancellationToken);
+    }
+
+    private (string title, string detail) ExtractOAuthError(string responseContent)
     {
         try
         {
             var oAuthError = JsonSerializer.Deserialize<OAuthErrorResponse>(responseContent);
             if (oAuthError != null)
-            {
-                errorResponse.Error = oAuthError.Error ?? OAuthErrorTitle;
-                errorResponse.Message = oAuthError.ErrorDescription ?? YahooApiErrorMessage;
-            }
+                return (oAuthError.Error ?? OAuthErrorTitle, oAuthError.ErrorDescription ?? YahooApiErrorMessage);
         }
         catch (Exception)
         {
             logger.LogError("Unknown error response.");
         }
+
+        return (OAuthErrorTitle, YahooApiErrorMessage);
     }
 
-    private void ExtractYahooApiError(string responseContent, ApiErrorResponse errorResponse)
+    private (string title, string detail) ExtractYahooApiError(string responseContent)
     {
         try
         {
             var serializer = new XmlSerializer(typeof(YahooApiError));
             using var reader = new StringReader(responseContent);
             var yahooApiError = (YahooApiError?)serializer.Deserialize(reader);
-
             if (yahooApiError != null)
-            {
-                errorResponse.Error = yahooApiError.Description ?? YahooApiErrorTitle;
-                errorResponse.Message = yahooApiError.Detail ?? YahooApiErrorMessage;
-            }
+                return (yahooApiError.Description ?? YahooApiErrorTitle, yahooApiError.Detail ?? YahooApiErrorMessage);
         }
         catch (Exception)
         {
             logger.LogError("Unknown error response.");
         }
+
+        return (YahooApiErrorTitle, YahooApiErrorMessage);
     }
 
-    private Task HandleGenericExceptionAsync(HttpContext context, CancellationToken cancellationToken)
+    private static ProblemDetails CreateProblemDetails(int status, string title, string detail) =>
+        new() { Status = status, Title = title, Detail = detail };
+
+    private static async Task WriteProblemDetailsAsync(HttpContext context, ProblemDetails problem, CancellationToken cancellationToken)
     {
-        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-        context.Response.ContentType = "application/json";
-
-        var apiErrorResponse = new ApiErrorResponse()
-        {
-            Error = GenericErrorTitle,
-            Message = GenericErrorMessage
-        };
-
-        return context.Response.WriteAsync(JsonSerializer.Serialize(apiErrorResponse), cancellationToken);
+        context.Response.StatusCode = problem.Status!.Value;
+        context.Response.ContentType = "application/problem+json";
+        await JsonSerializer.SerializeAsync(context.Response.Body, problem, JsonOptions, cancellationToken);
     }
 }

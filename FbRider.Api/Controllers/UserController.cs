@@ -1,57 +1,64 @@
-using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Security.Claims;
+using FbRider.Api.Responses;
 using FbRider.Api.Utils;
-using FbRider.Domain.Models;
+using FbRider.Application;
 using FbRider.Application.Services;
+using FbRider.Domain.Models;
 
 namespace FbRider.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
+[Produces("application/json")]
 public class UserController(ILeagueService leagueService, IUserService userService) : ControllerBase
 {
-    [Authorize]
     [HttpGet("seasons")]
-    public async Task<ActionResult<Season[]>> GetUserSeasons()
+    [ProducesResponseType(typeof(SeasonResponse[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SeasonResponse[]>> GetUserSeasons(CancellationToken cancellationToken)
     {
-        // Retrieve the authenticated user's email
-        var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
-        var userToken = await userService.GetUserTokenAsync(userEmail);
-
+        var userToken = await GetUserTokenAsync();
         var seasons = await leagueService.GetUserSeasonsAsync(userToken.AccessToken);
-        return Ok(seasons);
+        return Ok(seasons.Select(s => s.ToResponse()).ToArray());
     }
 
-    [Authorize]
     [HttpGet("leagues")]
-    public async Task<ActionResult<IList<League>>> GetUserLeagues(string scoring)
+    [ProducesResponseType(typeof(IList<LeagueResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IList<LeagueResponse>>> GetUserLeagues(
+        [FromQuery][BindRequired] string scoring,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(scoring)) return BadRequest("Scoring type is required");
         var scoringType = EnumConvertor.GetScoringType(scoring);
-        if (scoringType == ScoringType.Unknown) return BadRequest("Unknown scoring type");
+        if (scoringType == ScoringType.Unknown)
+            return Problem(
+                detail: $"'{scoring}' is not a valid scoring type.",
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Invalid Scoring Type");
 
-        // Retrieve the authenticated user's email
-        var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
-        var userToken = await userService.GetUserTokenAsync(userEmail);
-
+        var userToken = await GetUserTokenAsync();
         var leagues = await leagueService.GetUserActiveLeaguesAsync(userToken.AccessToken, scoringType);
-        return Ok(leagues);
+        return Ok(leagues.Select(l => l.ToResponse()).ToList());
     }
 
-    [Authorize]
     [HttpGet("leagues/{leagueKey}/team")]
-    public async Task<ActionResult<Team>> GetUserTeamByLeague(string leagueKey)
+    [ProducesResponseType(typeof(TeamResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TeamResponse>> GetUserTeamByLeague(string leagueKey, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(leagueKey)) return BadRequest("League key is required.");
-
-        // Retrieve the authenticated user's email
-        var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
-        var userToken = await userService.GetUserTokenAsync(userEmail);
-
+        var userToken = await GetUserTokenAsync();
         var userTeam = await leagueService.GetUserTeamByLeagueAsync(userToken.AccessToken, leagueKey);
-        return Ok(userTeam);
+        return Ok(userTeam.ToResponse());
+    }
+
+    private async Task<UserToken> GetUserTokenAsync()
+    {
+        var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
+        return await userService.GetUserTokenAsync(userEmail);
     }
 }

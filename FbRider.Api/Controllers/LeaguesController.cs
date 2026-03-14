@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using FbRider.Application;
 using FbRider.Application.Services;
+using FbRider.Api.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,22 +9,28 @@ namespace FbRider.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class LeaguesController(ILeagueService leagueService, IUserService userService)
-    : ControllerBase
+[Authorize]
+[Produces("application/json")]
+public class LeaguesController(ILeagueService leagueService, IUserService userService) : ControllerBase
 {
-    private const string LeagueKeyIsRequiredError = "League key is required.";
-
     [HttpGet("{leagueKey}/settings")]
-    [Authorize]
-    public async Task<IActionResult> GetLeagueSettings(string leagueKey)
+    [ProducesResponseType(typeof(LeagueSettingsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LeagueSettingsResponse>> GetLeagueSettings(string leagueKey, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(leagueKey)) return BadRequest(LeagueKeyIsRequiredError);
-
-        // Retrieve the authenticated user's email
-        var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
-        var userToken = await userService.GetUserTokenAsync(userEmail);
-
+        var userToken = await GetUserTokenAsync();
         var league = await leagueService.GetLeagueAsync(userToken.AccessToken, leagueKey);
-        return Ok(league.Settings);
+
+        if (league.Settings is null)
+            return NotFound();
+
+        return Ok(league.Settings.ToResponse());
+    }
+
+    private async Task<UserToken> GetUserTokenAsync()
+    {
+        var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
+        return await userService.GetUserTokenAsync(userEmail);
     }
 }

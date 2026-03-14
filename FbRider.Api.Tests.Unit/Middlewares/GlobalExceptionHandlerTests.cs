@@ -3,10 +3,11 @@ using System.Text;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Serialization;
-using FbRider.Api.DTOs;
 using FbRider.Api.Middlewares;
+using FbRider.Api.DTOs;
 using FbRider.YahooApi;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -17,6 +18,8 @@ public class GlobalExceptionHandlerTests
 {
     private Mock<ILogger<GlobalExceptionHandler>> _loggerMock;
     private DefaultHttpContext _httpContext;
+
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [SetUp]
     public void SetUp()
@@ -44,7 +47,7 @@ public class GlobalExceptionHandlerTests
     public async Task TryHandleAsync_YahooSignInApiException_HttpException_ReturnsExpectedResponse()
     {
         // Arrange
-        var exception = new YahooSignInException("A network error", "/test", string.Empty, HttpStatusCode.InternalServerError, innerException:new HttpRequestException("some error"));
+        var exception = new YahooSignInException("A network error", "/test", string.Empty, HttpStatusCode.InternalServerError, innerException: new HttpRequestException("some error"));
         var handler = CreateHandler();
 
         // Act
@@ -53,10 +56,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.InternalServerError, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response!.Title);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Detail);
     }
 
     [Test]
@@ -73,10 +75,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.BadRequest, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(oAuthError.Error, response.Error);
-        Assert.AreEqual(oAuthError.ErrorDescription, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(oAuthError.Error, response!.Title);
+        Assert.AreEqual(oAuthError.ErrorDescription, response.Detail);
     }
 
     [Test]
@@ -92,10 +93,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.BadRequest, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(GlobalExceptionHandler.OAuthErrorTitle, response!.Title);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Detail);
     }
 
     [Test]
@@ -112,10 +112,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.InternalServerError, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response!.Title);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Detail);
     }
 
     [Test]
@@ -141,10 +140,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.BadRequest, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(apiError.Description, response.Error);
-        Assert.AreEqual(apiError.Detail, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(apiError.Description, response!.Title);
+        Assert.AreEqual(apiError.Detail, response.Detail);
     }
 
     [Test]
@@ -160,10 +158,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.BadRequest, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response!.Title);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Detail);
     }
 
     [Test]
@@ -179,10 +176,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.InternalServerError, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response!.Title);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Detail);
     }
 
     [Test]
@@ -198,10 +194,9 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.BadRequest, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
-        Assert.AreEqual("Validation error message", response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response!.Title);
+        Assert.AreEqual("Validation error message", response.Detail);
     }
 
     [Test]
@@ -217,9 +212,8 @@ public class GlobalExceptionHandlerTests
         // Assert
         Assert.IsTrue(result);
         Assert.AreEqual((int)HttpStatusCode.InternalServerError, _httpContext.Response.StatusCode);
-        var responseBody = ReadResponseBody(_httpContext);
-        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
-        Assert.AreEqual(GlobalExceptionHandler.GenericErrorTitle, response.Error);
-        Assert.AreEqual(GlobalExceptionHandler.GenericErrorMessage, response.Message);
+        var response = JsonSerializer.Deserialize<ProblemDetails>(ReadResponseBody(_httpContext), JsonOptions);
+        Assert.AreEqual(GlobalExceptionHandler.GenericErrorTitle, response!.Title);
+        Assert.AreEqual(GlobalExceptionHandler.GenericErrorMessage, response.Detail);
     }
 }
