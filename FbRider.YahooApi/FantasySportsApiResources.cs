@@ -110,7 +110,7 @@ public class Groups
 {
 
     [XmlElement(ElementName = "group", Namespace = "http://fantasysports.yahooapis.com/fantasy/v2/base.rng")]
-    public List<Group> Group { get; set; }
+    public List<Group> Group { get; set; } = new();
 }
 
 [XmlRoot(ElementName = "stat_categories", Namespace = "http://fantasysports.yahooapis.com/fantasy/v2/base.rng")]
