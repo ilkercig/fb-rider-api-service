@@ -18,8 +18,12 @@ dotnet build
 # Run the API (HTTP: localhost:5095, HTTPS: localhost:7149)
 dotnet run --project FbRider.Api/FbRider.Api.csproj
 
-# Run all unit tests
+# Run all unit tests (both test projects)
 dotnet test
+
+# Run tests in a specific project
+dotnet test FbRider.Api.Tests.Unit/FbRider.Api.Tests.Unit.csproj
+dotnet test FbRider.AllPlay.Tests/FbRider.AllPlay.Tests.csproj
 
 # Run a single test class
 dotnet test --filter "ClassName=AllPlayScoreServiceTests"
@@ -38,9 +42,18 @@ Swagger UI is available at `/swagger` when running in development mode.
 
 ## Architecture
 
-The solution has two projects:
-- `FbRider.Api` — main API
-- `FbRider.Api.Tests.Unit` — NUnit unit tests (using Moq for mocking)
+The solution has 8 projects:
+
+| Project | Purpose |
+|---|---|
+| `FbRider.Api` | Main ASP.NET Core web API (controllers, middlewares, DI wiring) |
+| `FbRider.Application` | Service interfaces and `UserService` (token/profile management) |
+| `FbRider.Domain` | Pure domain models (`League`, `Team`, `Player`, `Season`, etc.) |
+| `FbRider.AllPlay` | All-play standings engine: `AllPlayService` + `AllPlayScoreService` |
+| `FbRider.YahooApi` | HTTP clients for Yahoo OAuth and Fantasy Sports; `FantasySportsApiResources.cs` contains XML deserialization DTOs for Yahoo API responses |
+| `FbRider.Infastructure` | MongoDB `UserTokenRepository` (stores OAuth tokens per user) |
+| `FbRider.Api.Tests.Unit` | NUnit + Moq tests for API layer |
+| `FbRider.AllPlay.Tests` | NUnit + Moq tests for all-play scoring logic |
 
 ### Request Flow
 
@@ -56,16 +69,23 @@ HTTP Request
 
 ### Key Layers
 
-- **Controllers** — thin; delegate to services
-- **Services** (`/Services`) — orchestration and business logic; call Yahoo API clients and repositories
-- **Domain** (`/Domain`) — pure domain models and `AllPlayScoreService` (all-play scoring logic, no external dependencies)
-- **YahooApi** (`/YahooApi`) — HTTP clients for Yahoo OAuth and Fantasy Sports endpoints; `FantasySportsApiResources.cs` is the large resource model file mapping Yahoo API responses
-- **Repositories** (`/Repositories`) — MongoDB data access for `UserToken` (OAuth tokens per user)
-- **Middlewares** — `TokenRefreshMiddleware` automatically refreshes expired Yahoo OAuth tokens; `GlobalExceptionHandler` handles unhandled exceptions
+- **Controllers** — thin; delegate to services. Endpoints: `YahooAuthController` (`/api/yahooauth/*`), `UserController` (`/api/user/*`), `LeaguesController` (`/api/leagues/*`)
+- **Application** — `UserService` orchestrates token lifecycle; service interfaces (`IUserService`, `ILeagueService`) live here
+- **LeagueService** — implemented in `FbRider.YahooApi`; calls Yahoo API, maps results via AutoMapper, filters out non-NBA games and closed seasons
+- **AllPlay** — `AllPlayService` calls Yahoo API per week, creates `PositiveStat`/`NegativeStat` based on stat category `SortOrder` (1 = higher is better, else lower is better), then delegates to `AllPlayScoreService` (pure, no external deps) which computes matchup results and returns `AllPlayStandingsDTO`
+- **YahooApi** — `YahooFantasySportsApiClient` and `YahooSignInApiClient`; `FantasySportsApiResources.cs` is ~950 lines of XML DTOs using Yahoo's namespace attributes
+- **Mapping** — `YahooApiResourceMappingProfile` in `FbRider.Api/Mapping/` maps `FantasySportsApiResources` to domain models via AutoMapper; all mappings use `.ForAllMembers(opt => opt.Condition(...))` to ignore nulls; string-to-bool conversions check for `"1"`
+- **Infastructure** — MongoDB access; note the intentional typo in the project name
+- **Middlewares** — `TokenRefreshMiddleware` refreshes expired Yahoo OAuth tokens before the request hits a controller; `GlobalExceptionHandler` catches `YahooApiException` (parses XML/JSON error body) and generic errors, signs out user on 401/403, returns JSON `ApiErrorResponse`
 
 ### Authentication
 
 Yahoo OAuth2/OIDC flow: frontend redirects to Yahoo → Yahoo calls back to `POST /api/yahooauth/callback` → tokens stored in MongoDB `UserTokens` collection → cookie session (30-day, HttpOnly, SameSite=None for cross-origin).
+
+### DI Lifetimes
+
+- **Singletons**: `ISignInApiClient`, `IYahooFantasySportsApiClient`
+- **Scoped**: `IUserService`, `ILeagueService`, `IUserTokenRepository`
 
 ### Configuration
 
@@ -76,4 +96,6 @@ Yahoo OAuth2/OIDC flow: frontend redirects to Yahoo → Yahoo calls back to `POS
 
 ### Test Patterns
 
-Tests use builder classes in `FbRider.Api.Tests.Unit/Data/Builders/` to construct test data. When adding tests, follow the builder pattern for domain model construction.
+- `FbRider.Api.Tests.Unit` covers controllers, services, middlewares, and AutoMapper mappings.
+- `FbRider.AllPlay.Tests` covers all-play domain models and `AllPlayScoreService`.
+- Both projects use builder classes (e.g. `LeagueBuilder`, `TeamBuilder`, `PlayerBuilder`) with fluent `With*()` methods to construct test data. Builders populate Yahoo API resource objects (not domain models directly), and static factory properties like `PlayerBuilder.Guard` provide pre-configured instances. When adding tests, follow this builder pattern rather than constructing objects directly.

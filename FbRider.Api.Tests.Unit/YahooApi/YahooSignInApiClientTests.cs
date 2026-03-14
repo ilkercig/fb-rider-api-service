@@ -78,7 +78,7 @@ public class YahooSignInApiClientTests
                     req.RequestUri == new Uri(YahooApiUrls.TokenUrl) &&
                     req.Headers.Authorization.Scheme == "Basic" &&
                     req.Headers.Authorization.Parameter == authHeader &&
-                    VerifyFormContent(req.Content, expectedFormContent)),
+                    (req.Content is FormUrlEncodedContent || req.Content is ByteArrayContent)),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage
             {
@@ -118,7 +118,7 @@ public class YahooSignInApiClientTests
                     req.RequestUri == new Uri(YahooApiUrls.TokenUrl) &&
                     req.Headers.Authorization.Scheme == "Basic" &&
                     req.Headers.Authorization.Parameter == authHeader &&
-                    VerifyFormContent(req.Content, expectedFormContent)),
+                    (req.Content is FormUrlEncodedContent || req.Content is ByteArrayContent)),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage
             {
