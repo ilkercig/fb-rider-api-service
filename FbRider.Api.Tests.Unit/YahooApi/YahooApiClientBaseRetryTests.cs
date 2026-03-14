@@ -4,6 +4,8 @@ using FbRider.YahooApi;
 using Moq;
 using Moq.Protected;
 using NUnit.Framework;
+using Polly;
+using Polly.Retry;
 
 namespace FbRider.Api.Tests.Unit.YahooApi;
 
@@ -32,9 +34,28 @@ public class YahooApiClientBaseRetryTests
         _httpClient.Dispose();
     }
 
-    private class TestYahooApiClient(HttpClient httpClient) : YahooApiClientBase(httpClient)
+    private class TestYahooApiClient(HttpClient httpClient) : YahooApiClientBase<YahooFantasySportsException>(httpClient, TestPipeline)
     {
-        protected override YahooApiType ApiType => YahooApiType.FantasySports;
+        private static readonly ResiliencePipeline<HttpResponseMessage> TestPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
+            .AddRetry(new RetryStrategyOptions<HttpResponseMessage>
+            {
+                ShouldHandle = new PredicateBuilder<HttpResponseMessage>()
+                    .Handle<HttpRequestException>()
+                    .HandleResult(response => response.StatusCode is HttpStatusCode.InternalServerError 
+                                              or HttpStatusCode.BadGateway 
+                                              or HttpStatusCode.ServiceUnavailable 
+                                              or HttpStatusCode.GatewayTimeout 
+                                              or HttpStatusCode.RequestTimeout),
+                BackoffType = DelayBackoffType.Constant,
+                MaxRetryAttempts = 3,
+                Delay = TimeSpan.FromMilliseconds(1)
+            })
+            .Build();
+
+        protected override YahooFantasySportsException CreateException(string message, string endpoint, string responseContent, HttpStatusCode statusCode, Exception? innerException = null)
+        {
+            return new YahooFantasySportsException(message, endpoint, responseContent, statusCode, innerException);
+        }
 
         protected override T? Deserialize<T>(string responseContent) where T : default
         {
@@ -100,11 +121,15 @@ public class YahooApiClientBaseRetryTests
             .Setup<Task<HttpResponseMessage>>("SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+            .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            {
+                Content = new StringContent("Service Unavailable")
+            });
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<YahooApiException>(() => _client.CallSendRequest<string>(request));
+        var ex = Assert.ThrowsAsync<YahooFantasySportsException>(() => _client.CallSendRequest<string>(request));
         Assert.That(ex!.StatusCode, Is.EqualTo(HttpStatusCode.ServiceUnavailable));
+        Assert.That(ex.ResponseContent, Is.EqualTo("Service Unavailable"));
         
         // Initial attempt + 3 retries = 4 total calls
         _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Exactly(4), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());

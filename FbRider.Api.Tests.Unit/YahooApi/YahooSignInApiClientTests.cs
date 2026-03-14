@@ -150,7 +150,7 @@ public class YahooSignInApiClientTests
     }
 
     [Test]
-    public void GetAccessToken_ShouldThrowYahooApiException_WhenRequestFailsWithOAuthError()
+    public void GetAccessToken_ShouldThrowYahooSignInException_WhenRequestFailsWithOAuthError()
     {
         // Arrange
         var oAuthErrorResponse = new OAuthErrorResponse("invalid_grant", "Authorization code expired");
@@ -169,7 +169,7 @@ public class YahooSignInApiClientTests
             });
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<YahooApiException>(() => _client.GetAccessToken(ValidCode));
+        var ex = Assert.ThrowsAsync<YahooSignInException>(() => _client.GetAccessToken(ValidCode));
         Assert.That(ex.Message, Does.Contain(YahooApiErrorMessages.ResponseNotSuccessful));
         Assert.That(ex.Endpoint, Is.EqualTo(YahooApiUrls.TokenUrl));
         Assert.That(ex.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
@@ -177,7 +177,7 @@ public class YahooSignInApiClientTests
     }
 
     [Test]
-    public void GetAccessToken_ShouldThrowYahooApiException_OnNetworkError()
+    public void GetAccessToken_ShouldThrowYahooSignInException_OnNetworkError()
     {
         // Arrange
         _httpMessageHandlerMock.Protected()
@@ -187,13 +187,15 @@ public class YahooSignInApiClientTests
             .Throws(new HttpRequestException("Network error"));
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<YahooApiException>(() => _client.GetAccessToken(ValidCode));
+        var ex = Assert.ThrowsAsync<YahooSignInException>(() => _client.GetAccessToken(ValidCode));
         Assert.That(ex.Message, Does.Contain(YahooApiErrorMessages.ApiRequestError));
         Assert.That(ex.Endpoint, Is.EqualTo(YahooApiUrls.TokenUrl));
+        Assert.That(ex.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
+        Assert.That(ex.ResponseContent, Is.EqualTo(string.Empty));
     }
 
     [Test]
-    public async Task GetAccessToken_ShouldThrowYahooApiException_WhenResponseIsOkAndTokenResponseDeserializationFails()
+    public async Task GetAccessToken_ShouldThrowYahooSignInException_WhenResponseIsOkAndTokenResponseDeserializationFails()
     {
         // Arrange
         const string malformedTokenResponse = "{ \"accessToken\": "; // Malformed JSON
@@ -211,7 +213,7 @@ public class YahooSignInApiClientTests
             });
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<YahooApiException>(async () => await _client.GetAccessToken(ValidCode));
+        var exception = Assert.ThrowsAsync<YahooSignInException>(async () => await _client.GetAccessToken(ValidCode));
 
         Assert.That(exception, Is.Not.Null);
         Assert.That(exception.Message, Does.Contain(YahooApiErrorMessages.DeserializationFailed));

@@ -44,7 +44,7 @@ public class GlobalExceptionHandlerTests
     public async Task TryHandleAsync_YahooSignInApiException_HttpException_ReturnsExpectedResponse()
     {
         // Arrange
-        var exception = new YahooApiException("A network error", "/test", YahooApiType.SignIn, innerException:new HttpRequestException("some error"));
+        var exception = new YahooSignInException("A network error", "/test", string.Empty, HttpStatusCode.InternalServerError, innerException:new HttpRequestException("some error"));
         var handler = CreateHandler();
 
         // Act
@@ -64,7 +64,7 @@ public class GlobalExceptionHandlerTests
     {
         var oAuthError = new OAuthErrorResponse("invalid_request", "Invalid request description");
         // Arrange
-        var exception = new YahooApiException("Bad request", "/test", YahooApiType.SignIn, JsonSerializer.Serialize(oAuthError), HttpStatusCode.BadRequest);
+        var exception = new YahooSignInException("Bad request", "/test", JsonSerializer.Serialize(oAuthError), HttpStatusCode.BadRequest);
         var handler = CreateHandler();
 
         // Act
@@ -83,7 +83,7 @@ public class GlobalExceptionHandlerTests
     public async Task TryHandleAsync_YahooSignInApiException_BadRequestWithBadErrorResponse_ReturnsExpectedResponse()
     {
         // Arrange
-        var exception = new YahooApiException("Bad request", "/test", YahooApiType.SignIn, "invalid_request", HttpStatusCode.BadRequest);
+        var exception = new YahooSignInException("Bad request", "/test", "invalid_request", HttpStatusCode.BadRequest);
         var handler = CreateHandler();
 
         // Act
@@ -103,7 +103,7 @@ public class GlobalExceptionHandlerTests
     {
         // Arrange
         var oAuthError = new OAuthErrorResponse("invalid_request", "Invalid request description");
-        var exception = new YahooApiException("Server error", "/test", YahooApiType.SignIn, JsonSerializer.Serialize(oAuthError), HttpStatusCode.ServiceUnavailable);
+        var exception = new YahooSignInException("Server error", "/test", JsonSerializer.Serialize(oAuthError), HttpStatusCode.ServiceUnavailable);
         var handler = CreateHandler();
 
         // Act
@@ -131,7 +131,7 @@ public class GlobalExceptionHandlerTests
         using var stringWriter = new StringWriter();
         using var xmlWriter = XmlWriter.Create(stringWriter);
         xmlSerializer.Serialize(xmlWriter, apiError);
-        var exception = new YahooApiException("Bad request", "/test", YahooApiType.FantasySports, stringWriter.ToString(), HttpStatusCode.BadRequest);
+        var exception = new YahooFantasySportsException("Bad request", "/test", stringWriter.ToString(), HttpStatusCode.BadRequest);
 
         var handler = CreateHandler();
 
@@ -151,7 +151,7 @@ public class GlobalExceptionHandlerTests
     public async Task TryHandleAsync_YahooFantasySportsApiException_BadRequestBadErrorResponse_ReturnsExpectedResponse()
     {
         // Arrange
-        var exception = new YahooApiException("Bad request", "/test", YahooApiType.FantasySports, "some kind of error", HttpStatusCode.BadRequest);
+        var exception = new YahooFantasySportsException("Bad request", "/test", "some kind of error", HttpStatusCode.BadRequest);
         var handler = CreateHandler();
 
         // Act
@@ -170,7 +170,7 @@ public class GlobalExceptionHandlerTests
     public async Task TryHandleAsync_YahooFantasySportsApiException_InternalServerError_ReturnsExpectedResponse()
     {
         // Arrange
-        var exception = new YahooApiException("Server error", "/test", YahooApiType.FantasySports, "Unexpected error", HttpStatusCode.InternalServerError);
+        var exception = new YahooFantasySportsException("Server error", "/test", "Unexpected error", HttpStatusCode.InternalServerError);
         var handler = CreateHandler();
 
         // Act
@@ -183,6 +183,25 @@ public class GlobalExceptionHandlerTests
         var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
         Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
         Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorMessage, response.Message);
+    }
+
+    [Test]
+    public async Task TryHandleAsync_YahooApiValidationException_ReturnsExpectedResponse()
+    {
+        // Arrange
+        var exception = new YahooApiValidationException("Validation error message", "/test");
+        var handler = CreateHandler();
+
+        // Act
+        var result = await handler.TryHandleAsync(_httpContext, exception, CancellationToken.None);
+
+        // Assert
+        Assert.IsTrue(result);
+        Assert.AreEqual((int)HttpStatusCode.BadRequest, _httpContext.Response.StatusCode);
+        var responseBody = ReadResponseBody(_httpContext);
+        var response = JsonSerializer.Deserialize<ApiErrorResponse>(responseBody);
+        Assert.AreEqual(GlobalExceptionHandler.YahooApiErrorTitle, response.Error);
+        Assert.AreEqual("Validation error message", response.Message);
     }
 
     [Test]

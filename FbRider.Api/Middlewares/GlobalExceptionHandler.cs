@@ -24,10 +24,24 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (exception is YahooApiException yahooApiException)
+        if (exception is YahooApiValidationException validationException)
         {
-            logger.LogError(yahooApiException, yahooApiException.ToString());
-            await HandleYahooApiExceptionAsync(httpContext, yahooApiException, cancellationToken);
+            logger.LogWarning(validationException, validationException.ToString());
+            await HandleYahooApiValidationExceptionAsync(httpContext, validationException, cancellationToken);
+            return true;
+        }
+
+        if (exception is YahooFantasySportsException fantasySportsException)
+        {
+            logger.LogError(fantasySportsException, fantasySportsException.ToString());
+            await HandleYahooFantasySportsExceptionAsync(httpContext, fantasySportsException, cancellationToken);
+            return true;
+        }
+
+        if (exception is YahooSignInException signInException)
+        {
+            logger.LogError(signInException, signInException.ToString());
+            await HandleYahooSignInExceptionAsync(httpContext, signInException, cancellationToken);
             return true;
         }
 
@@ -36,20 +50,63 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         return true;
     }
 
-    private async Task HandleYahooApiExceptionAsync(HttpContext context, YahooApiException ex, CancellationToken cancellationToken)
+    private async Task HandleYahooApiValidationExceptionAsync(HttpContext context, YahooApiValidationException ex, CancellationToken cancellationToken)
     {
-        Action<string, ApiErrorResponse> extractErrorMessage = ex.ApiType == YahooApiType.SignIn ? ExtractOAuthError
-            : ExtractYahooApiError;
+        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        context.Response.ContentType = "application/json";
+
+        var apiErrorResponse = new ApiErrorResponse()
+        {
+            Error = YahooApiErrorTitle,
+            Message = ex.Message
+        };
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(apiErrorResponse), cancellationToken);
+    }
+
+    private async Task HandleYahooFantasySportsExceptionAsync(HttpContext context, YahooFantasySportsException ex, CancellationToken cancellationToken)
+    {
         var apiErrorResponse = new ApiErrorResponse()
         {
             Error = YahooApiErrorTitle,
             Message = YahooApiErrorMessage
         };
 
-        if (ex is { StatusCode: HttpStatusCode.BadRequest, ResponseContent: not null })
+        if (ex is { StatusCode: HttpStatusCode.BadRequest })
         {
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            extractErrorMessage(ex.ResponseContent, apiErrorResponse);
+            ExtractYahooApiError(ex.ResponseContent, apiErrorResponse);
+        }
+        else if (ex is { StatusCode: HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized })
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            apiErrorResponse.Error = "User is not signed in";
+            if (context.User.Identity is { IsAuthenticated: true })
+            {
+                await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
+        }
+        else
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+        }
+
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(JsonSerializer.Serialize(apiErrorResponse), cancellationToken);
+    }
+
+    private async Task HandleYahooSignInExceptionAsync(HttpContext context, YahooSignInException ex, CancellationToken cancellationToken)
+    {
+        var apiErrorResponse = new ApiErrorResponse()
+        {
+            Error = YahooApiErrorTitle,
+            Message = YahooApiErrorMessage
+        };
+
+        if (ex is { StatusCode: HttpStatusCode.BadRequest })
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            ExtractOAuthError(ex.ResponseContent, apiErrorResponse);
         }
         else if (ex is { StatusCode: HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized })
         {

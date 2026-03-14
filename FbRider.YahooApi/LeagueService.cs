@@ -10,13 +10,13 @@ public class LeagueService(IYahooFantasySportsApiClient apiClient, IMapper mappe
 {
     public async Task<Season[]> GetUserSeasonsAsync(string accessToken)
     {
-        var games = await apiClient.GetUserGames(accessToken);
+        var games = await apiClient.GetUserFantasyGames(accessToken);
         var nbaGames = games.Where(g => g.Code == "nba");
         return mapper.Map<Season[]>(nbaGames);
     }
     public async Task<DomainLeague> GetLeagueAsync(string accessToken, string leagueKey)
     {
-        var leagueData = await apiClient.GetLeague(accessToken, leagueKey);
+        var leagueData = await apiClient.GetLeagueWithAllSubresources(accessToken, leagueKey);
         return mapper.Map<DomainLeague>(leagueData);
     }
 

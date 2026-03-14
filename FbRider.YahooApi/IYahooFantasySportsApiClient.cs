@@ -2,9 +2,9 @@ namespace FbRider.YahooApi;
 
 public interface IYahooFantasySportsApiClient
 {
-    Task<League> GetLeague(string accessToken, string leagueKey);
+    Task<League> GetLeagueWithAllSubresources(string accessToken, string leagueKey);
 
-    Task<Game[]> GetUserGames(string accessToken);
+    Task<Game[]> GetUserFantasyGames(string accessToken);
 
     Task<Team> GetTeam(string accessToken, string teamKey);
 

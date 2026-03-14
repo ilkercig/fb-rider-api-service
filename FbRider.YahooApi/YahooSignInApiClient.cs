@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -6,17 +7,39 @@ using FbRider.Application.Services;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Polly;
+using Polly.Retry;
 
 namespace FbRider.YahooApi;
 
-public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configuration) : YahooApiClientBase(httpClient),
+public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configuration) : YahooApiClientBase<YahooSignInException>(httpClient, ResiliencePipeline),
     ISignInApiClient
 {
-    public const string RedirectUriIsNotSetInTheConfiguration = "Redirect URI is not set in the configuration.";
-    public const string ClientIdIsNotSetInTheConfiguration = "Client Id is not set in the configuration.";
-    public const string ClientSecretIsNotSetInTheConfiguration = "Client Id is not set in the configuration.";
+    private static readonly ResiliencePipeline<HttpResponseMessage> ResiliencePipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
+        .AddRetry(new RetryStrategyOptions<HttpResponseMessage>
+        {
+            ShouldHandle = new PredicateBuilder<HttpResponseMessage>()
+                .Handle<HttpRequestException>()
+                .HandleResult(response => response.StatusCode is HttpStatusCode.InternalServerError
+                                          or HttpStatusCode.BadGateway
+                                          or HttpStatusCode.ServiceUnavailable
+                                          or HttpStatusCode.GatewayTimeout
+                                          or HttpStatusCode.RequestTimeout),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(1)
+        })
+        .Build();
 
-    protected override YahooApiType ApiType => YahooApiType.SignIn;
+    public const string RedirectUriIsNotSetInTheConfiguration = "Redirect URI is not set in the configuration.";
+    private const string ClientIdIsNotSetInTheConfiguration = "Client Id is not set in the configuration.";
+    private const string ClientSecretIsNotSetInTheConfiguration = "Client Id is not set in the configuration.";
+
+    protected override YahooSignInException CreateException(string message, string endpoint, string responseContent, HttpStatusCode statusCode, Exception? innerException = null)
+    {
+        return new YahooSignInException(message, endpoint, responseContent, statusCode, innerException);
+    }
 
     public async Task<BearerToken> GetAccessToken(string code)
     {

@@ -43,7 +43,7 @@ namespace FbRider.Api.Tests.Unit.Services
         [Test]
         public async Task GetUserSeasons_UserHasNoGame_ReturnsEmpty()
         {
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([]);
             var result = await _leagueService.GetUserSeasonsAsync(AccessToken);
 
             Assert.IsNotNull(result);
@@ -56,7 +56,7 @@ namespace FbRider.Api.Tests.Unit.Services
             //Arrange
             var nflGame = new GameBuilder().WithCode("nfl").Build();
 
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([nflGame]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([nflGame]);
             var result = await _leagueService.GetUserSeasonsAsync(AccessToken);
 
             Assert.IsNotNull(result);
@@ -71,7 +71,7 @@ namespace FbRider.Api.Tests.Unit.Services
             var activeNbaGame = new GameBuilder().WithCode("nba").WithIsGameOver("0").Build();
             var finishedNbaGame = new GameBuilder().WithCode("nba").WithIsGameOver("1").Build();
 
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([nflGame, activeNbaGame, finishedNbaGame]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([nflGame, activeNbaGame, finishedNbaGame]);
             var seasons = await _leagueService.GetUserSeasonsAsync(AccessToken);
             Assert.IsNotNull(seasons);
             Assert.IsNotEmpty(seasons);
@@ -88,7 +88,7 @@ namespace FbRider.Api.Tests.Unit.Services
         {
             var nbaGameNoLeague = new GameBuilder().WithCode("nba").WithIsGameOver("0").WithLeagues([]).Build();
 
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([nbaGameNoLeague]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([nbaGameNoLeague]);
             var seasons = await _leagueService.GetUserSeasonsAsync(AccessToken);
 
             Assert.IsNotNull(seasons.First().Leagues);
@@ -100,7 +100,7 @@ namespace FbRider.Api.Tests.Unit.Services
         {
             var leagueData = new LeagueBuilder().Build();
             var gameData = new GameBuilder().WithLeagues([leagueData]).Build();
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([gameData]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([gameData]);
             var seasons = await _leagueService.GetUserSeasonsAsync(AccessToken);
 
             Assert.IsNotNull(seasons.First().Leagues);
@@ -119,7 +119,7 @@ namespace FbRider.Api.Tests.Unit.Services
         public async Task GetUserActiveLeagues_UserHasNoActiveLeagues_ReturnsEmpty()
         {
             var gameData = new GameBuilder().WithIsGameOver("1").Build();
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([gameData]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([gameData]);
             var leagues = await _leagueService.GetUserActiveLeaguesAsync(AccessToken, ScoringType.HeadToHead);
 
             Assert.IsNotNull(leagues);
@@ -134,7 +134,7 @@ namespace FbRider.Api.Tests.Unit.Services
             var activeGame = new GameBuilder().WithLeagues([leagueData, leagueData2]).Build();
             var finishedGame = new GameBuilder().WithIsGameOver("1").WithLeagues([leagueData]).Build();
 
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([activeGame, finishedGame]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([activeGame, finishedGame]);
             var leagues = await _leagueService.GetUserActiveLeaguesAsync(AccessToken, ScoringType.HeadToHead);
 
             Assert.IsNotNull(leagues);
@@ -148,7 +148,7 @@ namespace FbRider.Api.Tests.Unit.Services
             var rotoLeague = new LeagueBuilder().WithScoringType("roto").Build();
             var activeGame = new GameBuilder().WithLeagues([rotoLeague]).Build();
 
-            _apiClientMock.Setup(x => x.GetUserGames(AccessToken)).ReturnsAsync([activeGame]);
+            _apiClientMock.Setup(x => x.GetUserFantasyGames(AccessToken)).ReturnsAsync([activeGame]);
             var leagues = await _leagueService.GetUserActiveLeaguesAsync(AccessToken, ScoringType.HeadToHead);
 
             Assert.IsNotNull(leagues);
@@ -159,7 +159,7 @@ namespace FbRider.Api.Tests.Unit.Services
         public void GetUserTeamByLeague_UserIsNotManager_ThrowsException()
         {
             var leagueData = new LeagueBuilder().WithStandings(new StandingsBuilder().WithTeams([new TeamBuilder().WithManagers([new ManagerBuilder().Build()]).Build()]).Build()).Build();
-            _apiClientMock.Setup(x => x.GetLeague(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
+            _apiClientMock.Setup(x => x.GetLeagueWithAllSubresources(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
             Assert.ThrowsAsync<ArgumentException>(() => _leagueService.GetUserTeamByLeagueAsync(AccessToken, leagueData.LeagueKey));
         }
 
@@ -167,7 +167,7 @@ namespace FbRider.Api.Tests.Unit.Services
         public void GetUserTeamByLeague_RosterNotFound_ThrowsException()
         {
             var leagueData = new LeagueBuilder().WithStandings(new StandingsBuilder().WithTeams([new TeamBuilder().WithOwnTeam().WithEmptyRoster().Build()]).Build()).Build();
-            _apiClientMock.Setup(x => x.GetLeague(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
+            _apiClientMock.Setup(x => x.GetLeagueWithAllSubresources(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
             _apiClientMock.Setup(x => x.GetTeam(AccessToken, leagueData.Standings.Teams.First().TeamKey)).ReturnsAsync(new TeamBuilder().WithEmptyRoster().Build());
             Assert.ThrowsAsync<InvalidOperationException>(() => _leagueService.GetUserTeamByLeagueAsync(AccessToken, leagueData.LeagueKey));
         }
@@ -177,7 +177,7 @@ namespace FbRider.Api.Tests.Unit.Services
         {
             var leagueData = new LeagueBuilder().WithTeams([new TeamBuilder().WithOwnTeam().Build()]).Build();
             var teamData = new TeamBuilder().WithRoster(new RosterBuilder().WithPlayers([]).Build()).Build();
-            _apiClientMock.Setup(x => x.GetLeague(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
+            _apiClientMock.Setup(x => x.GetLeagueWithAllSubresources(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
             _apiClientMock.Setup(x => x.GetTeam(AccessToken, leagueData.Standings.Teams.First().TeamKey)).ReturnsAsync(teamData);
             var team = _leagueService.GetUserTeamByLeagueAsync(AccessToken, leagueData.LeagueKey).Result;
             Assert.IsNotNull(team);
@@ -194,7 +194,7 @@ namespace FbRider.Api.Tests.Unit.Services
             var userTeam = new TeamBuilder().WithOwnTeam().Build();
             var leagueData = new LeagueBuilder().WithTeams([userTeam]).Build();
 
-            _apiClientMock.Setup(x => x.GetLeague(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
+            _apiClientMock.Setup(x => x.GetLeagueWithAllSubresources(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
             _apiClientMock.Setup(x => x.GetTeam(AccessToken, leagueData.Standings.Teams.First().TeamKey)).ReturnsAsync(userTeam);
             var team = _leagueService.GetUserTeamByLeagueAsync(AccessToken, leagueData.LeagueKey).Result;
             Assert.IsNotNull(team);
@@ -208,7 +208,7 @@ namespace FbRider.Api.Tests.Unit.Services
         {
             var settingsData = new SettingsBuilder().Build();
             var leagueData = new LeagueBuilder().WithSettings(settingsData).WithTeams([new TeamBuilder().Build()]).Build();
-            _apiClientMock.Setup(x => x.GetLeague(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
+            _apiClientMock.Setup(x => x.GetLeagueWithAllSubresources(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
             var settings = (await _leagueService.GetLeagueAsync(AccessToken, leagueData.LeagueKey)).Settings;
             Assert.IsNotNull(settings);
             Assert.IsNotEmpty(settings.StatCategories);
@@ -222,7 +222,7 @@ namespace FbRider.Api.Tests.Unit.Services
         public void GetLeague_ReturnsTeams()
         {
             var leagueData = new LeagueBuilder().WithTeams([new TeamBuilder().Build()]).WithSettings(new SettingsBuilder().Build()).Build();
-            _apiClientMock.Setup(x => x.GetLeague(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
+            _apiClientMock.Setup(x => x.GetLeagueWithAllSubresources(AccessToken, leagueData.LeagueKey)).ReturnsAsync(leagueData);
             var league = _leagueService.GetLeagueAsync(AccessToken, leagueData.LeagueKey).Result;
             Assert.IsNotNull(league);
             Assert.IsNotEmpty(league.Teams);

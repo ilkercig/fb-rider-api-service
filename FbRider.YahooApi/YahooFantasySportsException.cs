@@ -1,21 +1,18 @@
-using System.Net;
+﻿using System.Net;
 
 namespace FbRider.YahooApi;
 
-public class YahooApiException(
+public class YahooFantasySportsException(
     string message,
     string endpoint,
-    YahooApiType apiType,
-    string? responseContent = null,
-    HttpStatusCode statusCode = HttpStatusCode.InternalServerError,
+    string responseContent,
+    HttpStatusCode statusCode,
     Exception? innerException = null)
     : Exception(message, innerException)
 {
     public string Endpoint { get; } = endpoint;
-    public string? ResponseContent { get; } = responseContent;
+    public string ResponseContent { get; } = responseContent;
     public HttpStatusCode StatusCode { get; } = statusCode;
-
-    public YahooApiType ApiType { get; } = apiType;
 
     public override string ToString()
     {

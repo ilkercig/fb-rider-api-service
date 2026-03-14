@@ -4,46 +4,34 @@ using Polly.Retry;
 
 namespace FbRider.YahooApi
 {
-    public abstract class YahooApiClientBase(HttpClient httpClient)
+    public abstract class YahooApiClientBase<TException>(HttpClient httpClient, ResiliencePipeline<HttpResponseMessage> resiliencePipeline)
+        where TException : Exception
     {
-        private static readonly ResiliencePipeline<HttpResponseMessage> ResiliencePipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
-            .AddRetry(new RetryStrategyOptions<HttpResponseMessage>
-            {
-                ShouldHandle = new PredicateBuilder<HttpResponseMessage>()
-                    .Handle<HttpRequestException>()
-                    .HandleResult(response => response.StatusCode is HttpStatusCode.InternalServerError 
-                                              or HttpStatusCode.BadGateway 
-                                              or HttpStatusCode.ServiceUnavailable 
-                                              or HttpStatusCode.GatewayTimeout 
-                                              or HttpStatusCode.RequestTimeout),
-                BackoffType = DelayBackoffType.Exponential,
-                UseJitter = true,
-                MaxRetryAttempts = 3,
-                Delay = TimeSpan.FromSeconds(1)
-            })
-            .Build();
+        protected abstract TException CreateException(string message, string endpoint, string responseContent, HttpStatusCode statusCode, Exception? innerException = null);
 
         protected async Task<T> SendRequest<T>(HttpRequestMessage request)
         {
-            string responseContent;
+            string responseContent = string.Empty;
+            HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
             var requestUri = request.RequestUri?.ToString() ?? "";
-            HttpResponseMessage response;
+            HttpResponseMessage? response = null;
             try
             {
-                response = await ResiliencePipeline.ExecuteAsync(async token =>
+                response = await resiliencePipeline.ExecuteAsync(async token =>
                 {
                     var attemptRequest = await CloneHttpRequestMessageAsync(request);
                     return await httpClient.SendAsync(attemptRequest, token);
                 });
+                statusCode = response.StatusCode;
                 responseContent = await response.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
-                throw new YahooApiException(YahooApiErrorMessages.ApiRequestError, requestUri, ApiType, innerException: ex);
+                throw CreateException(YahooApiErrorMessages.ApiRequestError, requestUri, responseContent, statusCode, innerException: ex);
             }
 
             if (!response.IsSuccessStatusCode)
-                throw new YahooApiException(YahooApiErrorMessages.ResponseNotSuccessful, requestUri, ApiType, responseContent,
+                throw CreateException(YahooApiErrorMessages.ResponseNotSuccessful, requestUri, responseContent,
                     response.StatusCode);
 
             T? result;
@@ -53,12 +41,12 @@ namespace FbRider.YahooApi
             }
             catch (Exception ex)
             {
-                throw new YahooApiException(YahooApiErrorMessages.DeserializationFailed, requestUri, ApiType, responseContent,
+                throw CreateException(YahooApiErrorMessages.DeserializationFailed, requestUri, responseContent,
                     response.StatusCode, ex);
             }
 
             if (result == null)
-                throw new YahooApiException(YahooApiErrorMessages.DeserializationFailed, requestUri, ApiType, responseContent,
+                throw CreateException(YahooApiErrorMessages.DeserializationFailed, requestUri, responseContent,
                     response.StatusCode);
 
             return result;
@@ -94,8 +82,6 @@ namespace FbRider.YahooApi
 
             return clone;
         }
-
-        protected abstract YahooApiType ApiType { get; }
 
         protected abstract T? Deserialize<T>(string responseContent);
     }
