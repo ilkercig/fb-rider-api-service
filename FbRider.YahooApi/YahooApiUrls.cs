@@ -1,11 +1,11 @@
 namespace FbRider.YahooApi
 {
-    public class YahooApiUrls
+    public static class YahooApiUrls
     {
-        public static string TokenUrl = "https://api.login.yahoo.com/oauth2/get_token";
-        public static string UserInfoUrl = "https://api.login.yahoo.com/openid/v1/userinfo";
-        public static string LeagueUrl = "https://fantasysports.yahooapis.com/fantasy/v2/league";
-        public static string UserGamesUrl = "https://fantasysports.yahooapis.com/fantasy/v2/users;use_login=1/games/leagues";
-        public static string TeamUrl = "https://fantasysports.yahooapis.com/fantasy/v2/team";
+        public const string TokenUrl = "https://api.login.yahoo.com/oauth2/get_token";
+        public const string UserInfoUrl = "https://api.login.yahoo.com/openid/v1/userinfo";
+        public const string LeagueUrl = "https://fantasysports.yahooapis.com/fantasy/v2/league";
+        public const string UserGamesUrl = "https://fantasysports.yahooapis.com/fantasy/v2/users;use_login=1/games/leagues";
+        public const string TeamUrl = "https://fantasysports.yahooapis.com/fantasy/v2/team";
     }
 }
