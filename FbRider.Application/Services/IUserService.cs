@@ -1,13 +1,10 @@
-﻿using FbRider.YahooApi;
-using FbRider.Api.Models;
-
-namespace FbRider.Api.Services;
+namespace FbRider.Application.Services;
 
 public interface IUserService
 {
     Task<UserToken> GetUserTokenAsync(string userEmail);
 
-    Task<YahooUser> GetYahooUserAsync(string userEmail);
+    Task<UserProfile> GetUserProfileAsync(string userEmail);
 
     Task AddOrUpdateUserTokenAsync(UserToken userToken);
 

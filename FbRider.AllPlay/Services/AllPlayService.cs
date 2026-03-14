@@ -1,11 +1,10 @@
-﻿using FbRider.Api.Domain.Models;
-using FbRider.Api.DTOs;
+using FbRider.Domain.Models;
 using FbRider.YahooApi;
 using System.Globalization;
 using FbRider.AllPlay.Domain.Services;
 using FbRider.AllPlay.DTOs;
 using FbRider.AllPlay.Domain.Models;
-using FbRider.Api.Services;
+using FbRider.Application.Services;
 
 namespace FbRider.AllPlay.Services;
 

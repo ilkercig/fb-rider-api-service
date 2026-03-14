@@ -1,6 +1,6 @@
-﻿namespace FbRider.AllPlay.Domain.Models;
+namespace FbRider.AllPlay.Domain.Models;
 
-using FbRider.Api.Domain.Models;
+using FbRider.Domain.Models;
 
 public class AllPlayMatchUp
 {

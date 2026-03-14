@@ -1,6 +1,4 @@
-﻿using FbRider.Api.Models;
-
-namespace FbRider.Api.Repositories
+namespace FbRider.Application
 {
     public interface IUserTokenRepository
     {

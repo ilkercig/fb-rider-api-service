@@ -1,4 +1,4 @@
-﻿// using System.Xml.Serialization;
+// using System.Xml.Serialization;
 // XmlSerializer serializer = new XmlSerializer(typeof(FantasyContent));
 // using (StringReader reader = new StringReader(xml))
 // {

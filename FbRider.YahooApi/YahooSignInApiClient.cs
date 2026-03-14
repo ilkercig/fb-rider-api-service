@@ -1,6 +1,8 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using FbRider.Application;
+using FbRider.Application.Services;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
@@ -8,7 +10,7 @@ using Microsoft.Extensions.Configuration;
 namespace FbRider.YahooApi;
 
 public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configuration) : YahooApiClientBase(httpClient),
-    IYahooSignInApiClient
+    ISignInApiClient
 {
     public const string RedirectUriIsNotSetInTheConfiguration = "Redirect URI is not set in the configuration.";
     public const string ClientIdIsNotSetInTheConfiguration = "Client Id is not set in the configuration.";
@@ -16,7 +18,7 @@ public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configur
 
     protected override YahooApiType ApiType => YahooApiType.SignIn;
 
-    public async Task<TokenResponse> GetAccessToken(string code)
+    public async Task<BearerToken> GetAccessToken(string code)
     {
         var redirectUri = configuration["YahooRedirectUri"];
         if (string.IsNullOrEmpty(redirectUri))
@@ -28,23 +30,28 @@ public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configur
             new KeyValuePair<string, string>("redirect_uri", redirectUri),
             new KeyValuePair<string, string>("grant_type", "authorization_code")
         ]);
-        return await GetAccessToken(formContent);
+        var yahooTokenResponse = await GetAccessToken(formContent);
+        var bearerToken = new BearerToken(yahooTokenResponse.AccessToken, yahooTokenResponse.RefreshToken,yahooTokenResponse.TokenType,  yahooTokenResponse.ExpiresIn, yahooTokenResponse.IdToken);
+        return bearerToken;
     }
 
 
-    public async Task<TokenResponse> GetAccessTokenByRefreshToken(string refreshToken)
+    public async Task<BearerToken> GetAccessTokenByRefreshToken(string refreshToken)
     {
         var formContent = new FormUrlEncodedContent(
         [
             new KeyValuePair<string, string>("grant_type", "refresh_token"),
             new KeyValuePair<string, string>("refresh_token", refreshToken)
         ]);
-        return await GetAccessToken(formContent);
+        var yahooTokenResponse = await GetAccessToken(formContent);
+        var bearerToken = new BearerToken(yahooTokenResponse.AccessToken, yahooTokenResponse.RefreshToken, yahooTokenResponse.TokenType, yahooTokenResponse.ExpiresIn, yahooTokenResponse.IdToken);
+        return bearerToken;
     }
 
-    public async Task<YahooUser> GetCurrentUser(string accessToken)
+    public async Task<UserProfile> GetCurrentUser(string accessToken)
     {
-        return await GetAsync<YahooUser>($"{YahooApiUrls.UserInfoUrl}", accessToken);
+        var yahooUser = await GetAsync<YahooUser>($"{YahooApiUrls.UserInfoUrl}", accessToken);
+        return new UserProfile(yahooUser.Email, yahooUser.Name, new Application.ProfileImages(yahooUser.ProfileImages.Image32, yahooUser.ProfileImages.Image64, yahooUser.ProfileImages.Image128));
     }
 
     public async Task<T> GetAsync<T>(string url, string accessToken, Dictionary<string, string>? queryParams = null)
@@ -62,7 +69,7 @@ public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configur
         return await SendRequest<T>(request);
     }
 
-    private async Task<TokenResponse> GetAccessToken(FormUrlEncodedContent form)
+    private async Task<YahooTokenResponse> GetAccessToken(FormUrlEncodedContent form)
     {
         var clientId = configuration["YahooClientId"];
         if (string.IsNullOrEmpty(clientId))
@@ -80,7 +87,7 @@ public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configur
             Convert.ToBase64String(
                 Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-        return await SendRequest<TokenResponse>(request);
+        return await SendRequest<YahooTokenResponse>(request);
     }
 
    

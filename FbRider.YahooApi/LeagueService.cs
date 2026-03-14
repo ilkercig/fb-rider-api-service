@@ -1,26 +1,26 @@
-﻿using System.Globalization;
 using AutoMapper;
-using FbRider.Api.Domain.Models;
-using FbRider.Api.Utils;
-using FbRider.YahooApi;
+using FbRider.Domain.Models;
+using FbRider.Application.Services;
+using DomainLeague = FbRider.Domain.Models.League;
+using DomainTeam = FbRider.Domain.Models.Team;
 
-namespace FbRider.Api.Services;
+namespace FbRider.YahooApi;
 
 public class LeagueService(IYahooFantasySportsApiClient apiClient, IMapper mapper) : ILeagueService
 {
-    public async Task<FantasySeason[]> GetUserSeasonsAsync(string accessToken)
+    public async Task<Season[]> GetUserSeasonsAsync(string accessToken)
     {
         var games = await apiClient.GetUserGames(accessToken);
-        var nbaGames =games.Where(g => g.Code == "nba");
-        return mapper.Map<FantasySeason[]>(nbaGames);
+        var nbaGames = games.Where(g => g.Code == "nba");
+        return mapper.Map<Season[]>(nbaGames);
     }
-    public async Task<FantasyLeague> GetLeagueAsync(string accessToken, string leagueKey)
+    public async Task<DomainLeague> GetLeagueAsync(string accessToken, string leagueKey)
     {
         var leagueData = await apiClient.GetLeague(accessToken, leagueKey);
-        return mapper.Map<FantasyLeague>(leagueData);
+        return mapper.Map<DomainLeague>(leagueData);
     }
 
-    public async Task<FantasyLeague[]> GetUserActiveLeaguesAsync(string accessToken, ScoringType scoringType)
+    public async Task<DomainLeague[]> GetUserActiveLeaguesAsync(string accessToken, ScoringType scoringType)
     {
         var seasons = await GetUserSeasonsAsync(accessToken);
         return seasons.Where(s => !s.IsSeasonOver)
@@ -28,7 +28,7 @@ public class LeagueService(IYahooFantasySportsApiClient apiClient, IMapper mappe
             .Where(l => l.ScoringType == scoringType)
             .ToArray();
     }
-    public async Task<FantasyTeam> GetUserTeamByLeagueAsync(string accessToken, string leagueKey)
+    public async Task<DomainTeam> GetUserTeamByLeagueAsync(string accessToken, string leagueKey)
     {
         var league = await GetLeagueAsync(accessToken, leagueKey);
         var team = league.Teams!.SingleOrDefault(t => t.Managers.Any(m => m.IsCurrentLogin));
@@ -42,8 +42,8 @@ public class LeagueService(IYahooFantasySportsApiClient apiClient, IMapper mappe
             throw new InvalidOperationException("Roster not found for team");
         }
 
-        team.Roster = mapper.Map<FantasyTeamRoster>(teamWithRoster.Roster);
-        
+        team.Roster = mapper.Map<TeamRoster>(teamWithRoster.Roster);
+
         return team;
     }
 

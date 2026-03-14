@@ -1,20 +1,16 @@
-﻿using FbRider.Api.Models;
-using FbRider.Api.Repositories;
-using FbRider.YahooApi;
-
-namespace FbRider.Api.Services
+namespace FbRider.Application.Services
 {
-    public class UserService(IUserTokenRepository userTokenRepository, IYahooSignInApiClient yahooSignInApiClient) : IUserService
+    public class UserService(IUserTokenRepository userTokenRepository, ISignInApiClient signInApiClient) : IUserService
     {
         public async Task<UserToken> GetUserTokenAsync(string userEmail)
         {
             return await userTokenRepository.GetUserTokenAsync(userEmail);
         }
 
-        public async Task<YahooUser> GetYahooUserAsync(string userEmail)
+        public async Task<UserProfile> GetUserProfileAsync(string userEmail)
         {
             string accessToken = (await userTokenRepository.GetUserTokenAsync(userEmail)).AccessToken;
-            var user = await yahooSignInApiClient.GetCurrentUser(accessToken);
+            var user = await signInApiClient.GetCurrentUser(accessToken);
             return user;
         }
 

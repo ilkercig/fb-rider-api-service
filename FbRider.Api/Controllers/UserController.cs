@@ -1,11 +1,11 @@
-﻿using System.ComponentModel;
-using FbRider.Api.Services;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using FbRider.Api.Utils;
-using FbRider.Api.Domain.Models;
+using FbRider.Domain.Models;
+using FbRider.Application.Services;
 
 namespace FbRider.Api.Controllers;
 
@@ -15,7 +15,7 @@ public class UserController(ILeagueService leagueService, IUserService userServi
 {
     [Authorize]
     [HttpGet("seasons")]
-    public async Task<ActionResult<FantasySeason[]>> GetUserSeasons()
+    public async Task<ActionResult<Season[]>> GetUserSeasons()
     {
         // Retrieve the authenticated user's email
         var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
@@ -27,7 +27,7 @@ public class UserController(ILeagueService leagueService, IUserService userServi
 
     [Authorize]
     [HttpGet("leagues")]
-    public async Task<ActionResult<IList<FantasyLeague>>> GetUserLeagues(string scoring)
+    public async Task<ActionResult<IList<League>>> GetUserLeagues(string scoring)
     {
         if (string.IsNullOrWhiteSpace(scoring)) return BadRequest("Scoring type is required");
         var scoringType = EnumConvertor.GetScoringType(scoring);
@@ -43,7 +43,7 @@ public class UserController(ILeagueService leagueService, IUserService userServi
 
     [Authorize]
     [HttpGet("leagues/{leagueKey}/team")]
-    public async Task<ActionResult<FantasyTeam>> GetUserTeamByLeague(string leagueKey)
+    public async Task<ActionResult<Team>> GetUserTeamByLeague(string leagueKey)
     {
         if (string.IsNullOrWhiteSpace(leagueKey)) return BadRequest("League key is required.");
 

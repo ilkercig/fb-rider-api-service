@@ -1,4 +1,4 @@
-﻿using FbRider.Api.Domain.Models;
+using FbRider.Domain.Models;
 
 namespace FbRider.AllPlay.DTOs;
 

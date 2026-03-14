@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using FbRider.Api.DTOs;
@@ -39,7 +39,7 @@ public class YahooSignInApiClientTests
         _client = new YahooSignInApiClient(_httpClient, _configurationMock.Object);
 
         // Arrange
-        _tokenResponse = new TokenResponse
+        _yahooTokenResponse = new YahooTokenResponse
         {
             AccessToken = "test_access_token",
             RefreshToken = "test_refresh_token",
@@ -56,7 +56,7 @@ public class YahooSignInApiClientTests
     private const string ValidCode = "valid-code";
     private const string ClientSecret = "test-client-secret";
     private const string RedirectUri = "https://localhost/callback";
-    private TokenResponse _tokenResponse;
+    private YahooTokenResponse _yahooTokenResponse;
 
     [Test]
     public async Task GetAccessToken_ShouldSendCorrectRequestAndReturnTokenResponse_WhenRequestIsSuccessful()
@@ -83,7 +83,7 @@ public class YahooSignInApiClientTests
             .ReturnsAsync(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(JsonSerializer.Serialize(_tokenResponse), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize(_yahooTokenResponse), Encoding.UTF8, "application/json")
             });
 
         // Act
@@ -91,10 +91,10 @@ public class YahooSignInApiClientTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.That(result.AccessToken, Is.EqualTo(_tokenResponse.AccessToken));
-        Assert.That(result.RefreshToken, Is.EqualTo(_tokenResponse.RefreshToken));
-        Assert.That(result.ExpiresIn, Is.EqualTo(_tokenResponse.ExpiresIn));
-        Assert.That(result.TokenType, Is.EqualTo(_tokenResponse.TokenType));
+        Assert.That(result.AccessToken, Is.EqualTo(_yahooTokenResponse.AccessToken));
+        Assert.That(result.RefreshToken, Is.EqualTo(_yahooTokenResponse.RefreshToken));
+        Assert.That(result.ExpiresIn, Is.EqualTo(_yahooTokenResponse.ExpiresIn));
+        Assert.That(result.TokenType, Is.EqualTo(_yahooTokenResponse.TokenType));
     }
 
     [Test]
@@ -123,7 +123,7 @@ public class YahooSignInApiClientTests
             .ReturnsAsync(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(JsonSerializer.Serialize(_tokenResponse), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize(_yahooTokenResponse), Encoding.UTF8, "application/json")
             });
 
         // Act
@@ -131,10 +131,10 @@ public class YahooSignInApiClientTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.That(result.AccessToken, Is.EqualTo(_tokenResponse.AccessToken));
-        Assert.That(result.RefreshToken, Is.EqualTo(_tokenResponse.RefreshToken));
-        Assert.That(result.ExpiresIn, Is.EqualTo(_tokenResponse.ExpiresIn));
-        Assert.That(result.TokenType, Is.EqualTo(_tokenResponse.TokenType));
+        Assert.That(result.AccessToken, Is.EqualTo(_yahooTokenResponse.AccessToken));
+        Assert.That(result.RefreshToken, Is.EqualTo(_yahooTokenResponse.RefreshToken));
+        Assert.That(result.ExpiresIn, Is.EqualTo(_yahooTokenResponse.ExpiresIn));
+        Assert.That(result.TokenType, Is.EqualTo(_yahooTokenResponse.TokenType));
     }
 
     [Test]

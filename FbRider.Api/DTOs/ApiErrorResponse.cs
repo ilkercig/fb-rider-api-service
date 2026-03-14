@@ -1,4 +1,4 @@
-﻿namespace FbRider.Api.DTOs
+namespace FbRider.Api.DTOs
 {
     public class ApiErrorResponse
     {

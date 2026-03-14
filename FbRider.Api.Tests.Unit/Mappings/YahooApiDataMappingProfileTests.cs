@@ -5,13 +5,23 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
-using FbRider.Api.Domain.Models;
 using FbRider.Api.Mapping;
 using FbRider.Api.Tests.Unit.Data.Builders;
 using FbRider.Api.Utils;
+using Microsoft.Extensions.DependencyInjection;
 using Manager = FbRider.YahooApi.Manager;
 using RosterPosition = FbRider.YahooApi.RosterPosition;
 using FbRider.YahooApi;
+using DomainLeague = FbRider.Domain.Models.League;
+using DomainTeam = FbRider.Domain.Models.Team;
+using DomainPlayer = FbRider.Domain.Models.Player;
+using DomainManager = FbRider.Domain.Models.Manager;
+using DomainRosterPosition = FbRider.Domain.Models.RosterPosition;
+using DomainUser = FbRider.Domain.Models.User;
+using StatCategory = FbRider.Domain.Models.StatCategory;
+using LeagueSettings = FbRider.Domain.Models.LeagueSettings;
+using Season = FbRider.Domain.Models.Season;
+using TeamRoster = FbRider.Domain.Models.TeamRoster;
 
 namespace FbRider.Api.Tests.Unit.Mappings
 {
@@ -23,14 +33,18 @@ namespace FbRider.Api.Tests.Unit.Mappings
         [SetUp]
         public void SetUp()
         {
-            _mapper = new MapperConfiguration(cfg => cfg.AddProfile<YahooApiResourceMappingProfile>()).CreateMapper();
+            _mapper = new ServiceCollection()
+            .AddLogging()
+            .AddAutoMapper(cfg => cfg.AddProfile<YahooApiResourceMappingProfile>())
+            .BuildServiceProvider()
+            .GetRequiredService<IMapper>();
         }
 
         [Test]
         public void MapLeagueDataToFantasyLeague_LeagueKeyMapped()
         {
             var leagueData = new LeagueBuilder().Build();
-            var league = _mapper.Map<FantasyLeague>(leagueData);
+            var league = _mapper.Map<DomainLeague>(leagueData);
 
             //Assert
             Assert.AreEqual(leagueData.LeagueKey, league.Key);
@@ -57,7 +71,7 @@ namespace FbRider.Api.Tests.Unit.Mappings
         public void MapRosterPositionDataToRosterPosition_AllPropertiesValid(RosterPosition rosterPositionData)
         {
             //Act
-            var rosterPosition = _mapper.Map<FbRider.Api.Domain.Models.RosterPosition>(rosterPositionData);
+            var rosterPosition = _mapper.Map<DomainRosterPosition>(rosterPositionData);
 
             //Assert
             Assert.That(rosterPosition.Position, Is.EqualTo(rosterPositionData.Position));
@@ -82,7 +96,7 @@ namespace FbRider.Api.Tests.Unit.Mappings
         public void MapPlayerDataToFantasyPlayer_AllPropertiesValid(Player playerData)
         {
             //Act
-            var player = _mapper.Map<FantasyPlayer>(playerData);
+            var player = _mapper.Map<DomainPlayer>(playerData);
 
             //Assert
             Assert.That(player.Key, Is.EqualTo(playerData.PlayerKey));
@@ -100,7 +114,7 @@ namespace FbRider.Api.Tests.Unit.Mappings
         {
             var rosterData = new RosterBuilder().Build();
             //Act
-            var roster = _mapper.Map<FantasyTeamRoster>(rosterData);
+            var roster = _mapper.Map<TeamRoster>(rosterData);
             //Assert
             Assert.That(roster.Players.Count, Is.EqualTo(rosterData.Players.Length));
         }
@@ -110,7 +124,7 @@ namespace FbRider.Api.Tests.Unit.Mappings
         {
             var managerData = new ManagerBuilder().Build();
             //Act
-            var manager = _mapper.Map<FbRider.Api.Domain.Models.Manager>(managerData);
+            var manager = _mapper.Map<DomainManager>(managerData);
             //Assert
             Assert.That(manager.Name, Is.EqualTo(managerData.Nickname));
             Assert.That(manager.Id.ToString(), Is.EqualTo(managerData.ManagerId));
@@ -123,7 +137,7 @@ namespace FbRider.Api.Tests.Unit.Mappings
         public void MapTeamDataToFantasyTeam_AllPropertiesValid(Team teamData)
         {
             //Act
-            var team = _mapper.Map<FantasyTeam>(teamData);
+            var team = _mapper.Map<DomainTeam>(teamData);
             //Assert
             Assert.That(team.Key, Is.EqualTo(teamData.TeamKey));
             Assert.That(team.Name, Is.EqualTo(teamData.Name));
@@ -141,7 +155,7 @@ namespace FbRider.Api.Tests.Unit.Mappings
         public void MapLeagueDataToFantasyLeague_AllPropertiesValid(League leagueData)
         {
             //Act
-            var league = _mapper.Map<FantasyLeague>(leagueData);
+            var league = _mapper.Map<DomainLeague>(leagueData);
             //Assert
             Assert.That(league.Key, Is.EqualTo(leagueData.LeagueKey));
             Assert.That(league.Id, Is.EqualTo(leagueData.LeagueId));
@@ -167,11 +181,11 @@ namespace FbRider.Api.Tests.Unit.Mappings
             var game = new GameBuilder().Build();
 
             //Act
-            var season = _mapper.Map<FantasySeason>(game);
+            var season = _mapper.Map<Season>(game);
 
             //Assert
             Assert.That(season.Key, Is.EqualTo(game.GameKey));
-            Assert.That(season.Season.ToString(), Is.EqualTo(game.Season));
+            Assert.That(season.SeasonYear.ToString(), Is.EqualTo(game.Season));
             Assert.That(season.IsSeasonOver, Is.EqualTo(game.IsGameOver == "1"));
             Assert.That(season.Leagues.Count(), Is.EqualTo(game.Leagues.Length));
         }
@@ -181,7 +195,7 @@ namespace FbRider.Api.Tests.Unit.Mappings
         {
             var user = new UserBuilder().Build();
             //Act
-            var fantasyUser = _mapper.Map<FantasyUser>(user);
+            var fantasyUser = _mapper.Map<DomainUser>(user);
             //Assert
             Assert.That(fantasyUser.Key, Is.EqualTo(user.Guid));
             Assert.That(fantasyUser.Seasons.Count(), Is.EqualTo(user.Games.Length));

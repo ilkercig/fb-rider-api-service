@@ -1,6 +1,6 @@
-﻿namespace FbRider.Api.Domain.Models
+namespace FbRider.Domain.Models
 {
-    public class FantasyPlayer
+    public class Player
     {
         public required string Key { get; init; }
         public required string Id { get; init; }

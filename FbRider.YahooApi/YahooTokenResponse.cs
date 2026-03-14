@@ -1,8 +1,8 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace FbRider.YahooApi
 {
-    public class TokenResponse
+    public class YahooTokenResponse
     {
         [JsonPropertyName("access_token")]
         public required string AccessToken { get; init; }

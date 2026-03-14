@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="AutoMapper" Version="16.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy">
       <Version>8.*-*</Version>
     </PackageReference>
@@ -23,8 +23,9 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.0" />
   </ItemGroup>
 
-
   <ItemGroup>
+    <ProjectReference Include="..\FbRider.Application\FbRider.Application.csproj" />
+    <ProjectReference Include="..\FbRider.Infastructure\FbRider.Infastructure.csproj" />
     <ProjectReference Include="..\FbRider.YahooApi\FbRider.YahooApi.csproj" />
   </ItemGroup>
 

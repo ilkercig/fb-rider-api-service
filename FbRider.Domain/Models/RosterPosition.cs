@@ -1,4 +1,4 @@
-﻿namespace FbRider.Api.Domain.Models
+namespace FbRider.Domain.Models
 {
     public class RosterPosition
     {

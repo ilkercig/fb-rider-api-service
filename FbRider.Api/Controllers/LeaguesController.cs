@@ -1,5 +1,5 @@
-﻿using System.Security.Claims;
-using FbRider.Api.Services;
+using System.Security.Claims;
+using FbRider.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

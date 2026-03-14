@@ -1,9 +1,9 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace FbRider.Api.Models
+namespace FbRider.Infastructure.Models
 {
-    public class UserToken
+    public class UserTokenEntity
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -14,11 +14,11 @@ namespace FbRider.Api.Models
 
         public required string AccessToken { get; set; }
 
-        public required string RefreshToken { get; set; }
+        public string? RefreshToken { get; set; }
 
         public required DateTimeOffset TokenExpiration { get; set; }
 
-        public DateTimeOffset? CreatedDate { get; set; }
-        public DateTimeOffset? ModifiedDate { get; set; }
+        public DateTimeOffset CreatedDate { get; set; }
+        public DateTimeOffset ModifiedDate { get; set; }
     }
 }

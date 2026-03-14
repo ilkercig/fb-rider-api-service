@@ -1,5 +1,6 @@
-﻿using System.Security.Claims;
-using FbRider.Api.Services;
+using System.Security.Claims;
+using FbRider.Application;
+using FbRider.Application.Services;
 using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 namespace FbRider.Api.Middlewares;
 public class TokenRefreshMiddleware(
     RequestDelegate next,
-    IYahooSignInApiClient yahooSignInApiClient,
+    ISignInApiClient yahooSignInApiClient,
     IServiceProvider serviceProvider,
     ILogger<TokenRefreshMiddleware> logger)
 {
@@ -25,13 +26,14 @@ public class TokenRefreshMiddleware(
             if (DateTimeOffset.UtcNow > userToken.TokenExpiration)
             {
                 var newTokenResponse = await yahooSignInApiClient.GetAccessTokenByRefreshToken(userToken.RefreshToken);
-                userToken.AccessToken = newTokenResponse.AccessToken;
-                userToken.TokenExpiration = DateTime.UtcNow.AddSeconds(newTokenResponse.ExpiresIn - 60);
+               
+                var accessToken = newTokenResponse.AccessToken;
+                var expiration = DateTime.UtcNow.AddSeconds(newTokenResponse.ExpiresIn - 60);
+                string? refreshToken = newTokenResponse.RefreshToken;
 
-                if (!string.IsNullOrEmpty(newTokenResponse.RefreshToken))
-                    userToken.RefreshToken = newTokenResponse.RefreshToken;
+                UserToken newUserToken = new UserToken(userEmail, accessToken, refreshToken, expiration);
 
-                await userService.AddOrUpdateUserTokenAsync(userToken);
+                await userService.AddOrUpdateUserTokenAsync(newUserToken);
 
                 var claimsIdentity = (ClaimsIdentity)context.User.Identity;
                 await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,

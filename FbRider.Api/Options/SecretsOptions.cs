@@ -1,4 +1,4 @@
-﻿namespace FbRider.Api.Options
+namespace FbRider.Api.Options
 {
     public class SecretsOptions
     {

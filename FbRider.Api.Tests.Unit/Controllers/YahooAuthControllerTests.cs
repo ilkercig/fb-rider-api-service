@@ -1,10 +1,10 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using FbRider.Api.Controllers;
 using FbRider.Api.DTOs;
-using FbRider.Api.Models;
-using FbRider.Api.Services;
+using FbRider.Application;
+using FbRider.Application.Services;
 using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -23,7 +23,7 @@ public class YahooAuthControllerTests
     [SetUp]
     public void SetUp()
     {
-        _yahooSignInApiClientMock = new Mock<IYahooSignInApiClient>();
+        _yahooSignInApiClientMock = new Mock<ISignInApiClient>();
         _userServiceMock = new Mock<IUserService>();
         _loggerMock = new Mock<ILogger<YahooAuthController>>();
         _controller = new YahooAuthController(_yahooSignInApiClientMock.Object, _userServiceMock.Object)
@@ -35,23 +35,16 @@ public class YahooAuthControllerTests
         };
 
         var jwtIdToken = GenerateJwtToken(UserEmail, ValidNonce);
-        _tokenResponse = new TokenResponse
-        {
-            AccessToken = "access-token",
-            RefreshToken = "refresh-token",
-            ExpiresIn = 3600,
-            IdToken = jwtIdToken,
-            TokenType = "bearer"
-        };
+        _bearerToken = new BearerToken("access-token", "refresh-token", "bearer", 3600, jwtIdToken);
     }
 
-    private Mock<IYahooSignInApiClient> _yahooSignInApiClientMock;
+    private Mock<ISignInApiClient> _yahooSignInApiClientMock;
     private Mock<IUserService> _userServiceMock;
     private Mock<ILogger<YahooAuthController>> _loggerMock;
     private YahooAuthController _controller;
     private const string ValidNonce = "valid_nonce";
     private const string UserEmail = "user@example.com";
-    private TokenResponse _tokenResponse;
+    private BearerToken _bearerToken;
 
     [Test]
     public async Task Callback_ShouldReturnBadRequest_WhenCodeIsMissing()
@@ -87,17 +80,16 @@ public class YahooAuthControllerTests
         // Arrange
         var request = new CallbackRequest { Code = "valid-code", Nonce = ValidNonce };
 
-        var userToken = new UserToken
-        {
-            Email = UserEmail,
-            AccessToken = _tokenResponse.AccessToken,
-            RefreshToken = _tokenResponse.RefreshToken!,
-            TokenExpiration = DateTimeOffset.UtcNow.AddSeconds(_tokenResponse.ExpiresIn - 60)
-        };
+        var userToken = new UserToken(
+            UserEmail,
+            _bearerToken.AccessToken,
+            _bearerToken.RefreshToken!,
+            DateTimeOffset.UtcNow.AddSeconds(_bearerToken.ExpiresIn - 60)
+        );
 
         _yahooSignInApiClientMock
             .Setup(client => client.GetAccessToken(request.Code))
-            .ReturnsAsync(_tokenResponse);
+            .ReturnsAsync(_bearerToken);
 
 
         _userServiceMock
@@ -150,7 +142,7 @@ public class YahooAuthControllerTests
 
         _yahooSignInApiClientMock
             .Setup(client => client.GetAccessToken(request.Code))
-            .ReturnsAsync(_tokenResponse);
+            .ReturnsAsync(_bearerToken);
 
         // Act
         var result = await _controller.Callback(request);
@@ -165,19 +157,7 @@ public class YahooAuthControllerTests
     {
         // Arrange
         var email = "user@example.com";
-        var yahooUser = new YahooUser
-        {
-            Email = email,
-            Name = "User Name",
-            Sub = "sub-id",
-            EmailVerified = true,
-            ProfileImages = new ProfileImages
-            {
-                Image32 = "image32",
-                Image64 = "image64",
-                Image128 = "image128"
-            }
-        };
+        var userProfile = new UserProfile(email, "User Name", new Application.ProfileImages("image32", "image64", "image128"));
 
         _controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
@@ -185,20 +165,20 @@ public class YahooAuthControllerTests
         }));
 
         _userServiceMock
-            .Setup(service => service.GetYahooUserAsync(email))
-            .ReturnsAsync(yahooUser);
+            .Setup(service => service.GetUserProfileAsync(email))
+            .ReturnsAsync(userProfile);
 
         // Act
         var result = await _controller.Me();
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsInstanceOf<OkObjectResult>(result.Result); // Access `Result` to check the actual type
+        Assert.IsInstanceOf<OkObjectResult>(result.Result);
         var okResult = result.Result as OkObjectResult;
 
         Assert.IsNotNull(okResult);
-        Assert.IsInstanceOf<YahooUser>(okResult.Value);
-        Assert.AreEqual(yahooUser, okResult.Value);
+        Assert.IsInstanceOf<UserProfile>(okResult.Value);
+        Assert.AreEqual(userProfile, okResult.Value);
     }
 
 

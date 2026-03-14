@@ -1,8 +1,8 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FbRider.Api.DTOs;
-using FbRider.Api.Models;
-using FbRider.Api.Services;
+using FbRider.Application;
+using FbRider.Application.Services;
 using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -13,7 +13,7 @@ namespace FbRider.Api.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
-    public class YahooAuthController(IYahooSignInApiClient yahooSignInApiClient, IUserService userService) : ControllerBase
+    public class YahooAuthController(ISignInApiClient yahooSignInApiClient, IUserService userService) : ControllerBase
     {
         public const string AuthenticationCodeIsMissing = "Authentication code is missing";
         public const string NonceIsMissing = "Nonce is missing.";
@@ -32,7 +32,7 @@ namespace FbRider.Api.Controllers
         public async Task<ActionResult<YahooUser>> Me()
         {
             var userEmail = User.Claims.Single(c => c.Type == ClaimTypes.Email).Value;
-            YahooUser user = await userService.GetYahooUserAsync(userEmail);
+            UserProfile user = await userService.GetUserProfileAsync(userEmail);
             return Ok(user);
         }
 
@@ -68,12 +68,12 @@ namespace FbRider.Api.Controllers
 
             
             var userToken = new UserToken
-            {
-                Email = userEmail,
-                AccessToken = token.AccessToken,
-                RefreshToken = token.RefreshToken!,
-                TokenExpiration = DateTimeOffset.UtcNow.AddSeconds(token.ExpiresIn - 60)
-            };
+            (
+                 userEmail,
+                token.AccessToken,
+                token.RefreshToken!,
+               DateTimeOffset.UtcNow.AddSeconds(token.ExpiresIn - 60)
+            );
             await userService.AddOrUpdateUserTokenAsync(userToken);
             var claims = new List<Claim>
             {

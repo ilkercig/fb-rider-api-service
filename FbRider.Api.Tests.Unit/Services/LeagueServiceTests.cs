@@ -1,19 +1,20 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FbRider.Api.Services;
+using FbRider.Application.Services;
 using FbRider.YahooApi;
-using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.Extensions.DependencyInjection;
 using NuGet.Frameworks;
 using System.Xml.Linq;
 using FbRider.Api.Utils;
-using FbRider.Api.Domain.Models;
+using FbRider.Domain.Models;
 using FbRider.Api.Tests.Unit.Data.Builders;
 using AutoMapper;
 using FbRider.Api.Mapping;
+using Player = FbRider.Domain.Models.Player;
 
 namespace FbRider.Api.Tests.Unit.Services
 {
@@ -30,7 +31,11 @@ namespace FbRider.Api.Tests.Unit.Services
         [SetUp]
         public void SetUp()
         {
-            _mapper = new MapperConfiguration(cfg => cfg.AddProfile<YahooApiResourceMappingProfile>()).CreateMapper();
+            _mapper = new ServiceCollection()
+                .AddLogging()
+                .AddAutoMapper(cfg => cfg.AddProfile<YahooApiResourceMappingProfile>())
+                .BuildServiceProvider()
+                .GetRequiredService<IMapper>();
             _apiClientMock = new Mock<IYahooFantasySportsApiClient>();
             _leagueService = new LeagueService(_apiClientMock.Object, _mapper);
         }
@@ -73,7 +78,7 @@ namespace FbRider.Api.Tests.Unit.Services
             Assert.That(seasons.Length, Is.EqualTo(2));
 
             Assert.IsFalse(seasons[0].IsSeasonOver);
-            Assert.That(seasons[0].Season.ToString(), Is.EqualTo(activeNbaGame.Season));
+            Assert.That(seasons[0].SeasonYear.ToString(), Is.EqualTo(activeNbaGame.Season));
             Assert.That(seasons[0].Key, Is.EqualTo(activeNbaGame.GameKey));
 
         }
@@ -226,7 +231,7 @@ namespace FbRider.Api.Tests.Unit.Services
         }
 
 
-        private void AssertPlayer(Player playerApiData, FantasyPlayer player)
+        private void AssertPlayer(FbRider.YahooApi.Player playerApiData, Player player)
         {
             Assert.That(player.Key, Is.EqualTo(playerApiData.PlayerKey));
             Assert.That(player.FullName, Is.EqualTo(playerApiData.Name.Full));

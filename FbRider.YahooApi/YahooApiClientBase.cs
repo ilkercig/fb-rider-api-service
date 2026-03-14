@@ -1,4 +1,4 @@
-﻿namespace FbRider.YahooApi
+namespace FbRider.YahooApi
 {
     public abstract class YahooApiClientBase(HttpClient httpClient)
     {

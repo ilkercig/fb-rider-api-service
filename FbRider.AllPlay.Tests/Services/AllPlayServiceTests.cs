@@ -1,5 +1,5 @@
-﻿using FbRider.Api.Domain.Models;
-using FbRider.Api.Services;
+using FbRider.Domain.Models;
+using FbRider.Application.Services;
 using FbRider.YahooApi;
 using Moq;
 using FbRider.AllPlay.Domain.Services;

@@ -1,8 +1,9 @@
 using FbRider.Api;
 using FbRider.Api.Mapping;
 using FbRider.Api.Middlewares;
-using FbRider.Api.Repositories;
-using FbRider.Api.Services;
+using FbRider.Application;
+using FbRider.Application.Services;
+using FbRider.Infastructure;
 using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Serilog;
@@ -61,9 +62,9 @@ builder.Services.AddSession(options =>
 });
 
 if (builder.Environment.IsDevelopment()) builder.Configuration.AddUserSecrets<Program>();
-builder.Services.AddAutoMapper(typeof(YahooApiResourceMappingProfile));
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<YahooApiResourceMappingProfile>());
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<IYahooSignInApiClient, YahooSignInApiClient>();
+builder.Services.AddSingleton<ISignInApiClient, YahooSignInApiClient>();
 builder.Services.AddSingleton<IYahooFantasySportsApiClient, YahooFantasySportsApiClient>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ILeagueService, LeagueService>();

@@ -1,8 +1,8 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using FbRider.Api.DTOs;
 using FbRider.Api.Middlewares;
-using FbRider.Api.Models;
-using FbRider.Api.Services;
+using FbRider.Application;
+using FbRider.Application.Services;
 using FbRider.YahooApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -18,7 +18,7 @@ public class TokenRefreshMiddlewareTests
     [SetUp]
     public void SetUp()
     {
-        _mockYahooApiClient = new Mock<IYahooSignInApiClient>();
+        _mockYahooApiClient = new Mock<ISignInApiClient>();
         _mockLogger = new Mock<ILogger<TokenRefreshMiddleware>>();
         _mockNext = new Mock<RequestDelegate>();
         _mockContext = new Mock<HttpContext>();
@@ -65,7 +65,7 @@ public class TokenRefreshMiddlewareTests
         _mockContext.Setup(c => c.RequestServices).Returns(_serviceProviderMock.Object);
     }
 
-    private Mock<IYahooSignInApiClient> _mockYahooApiClient;
+    private Mock<ISignInApiClient> _mockYahooApiClient;
     private Mock<IUserService> _userServiceMock;
     private Mock<ILogger<TokenRefreshMiddleware>> _mockLogger;
     private Mock<RequestDelegate> _mockNext;
@@ -109,13 +109,7 @@ public class TokenRefreshMiddlewareTests
     public async Task InvokeAsync_AccessTokenIsValid_TokenNotRefreshed()
     {
         // Arrange
-        var validToken = new UserToken
-        {
-            AccessToken = "valid-token",
-            RefreshToken = "valid-refresh-token",
-            TokenExpiration = DateTimeOffset.UtcNow.AddMinutes(5),
-            Email = DummyUserEmail
-        };
+        var validToken = new UserToken(DummyUserEmail, "valid-token", "valid-refresh-token", DateTimeOffset.UtcNow.AddMinutes(5));
 
         var claimsPrincipal = new ClaimsPrincipal(
             new ClaimsIdentity([new Claim(ClaimTypes.Email, DummyUserEmail)], "custom"));
@@ -135,27 +129,14 @@ public class TokenRefreshMiddlewareTests
     public async Task InvokeAsync_AccessTokenExpired_TokenRefreshed()
     {
         // Arrange
-        var expiredToken = new UserToken
-        {
-            AccessToken = "expired-token",
-            RefreshToken = "valid-refresh-token",
-            TokenExpiration = DateTimeOffset.UtcNow.AddMinutes(-1), // Token expired
-            Email = DummyUserEmail
-        };
+        var expiredToken = new UserToken(DummyUserEmail, "expired-token", "valid-refresh-token", DateTimeOffset.UtcNow.AddMinutes(-1));
 
         var claimsPrincipal = new ClaimsPrincipal(
             new ClaimsIdentity([new Claim(ClaimTypes.Email, DummyUserEmail)], "custom"));
         _mockContext.Setup(c => c.User).Returns(claimsPrincipal);
         _userServiceMock.Setup(repo => repo.GetUserTokenAsync(DummyUserEmail)).ReturnsAsync(expiredToken);
 
-        var newAccessTokenResponse = new TokenResponse
-        {
-            AccessToken = "new-access-token",
-            ExpiresIn = 3600,
-            RefreshToken = "new-refresh-token",
-            TokenType = "Bearer",
-            IdToken = "someIdToken"
-        };
+        var newAccessTokenResponse = new BearerToken("new-access-token", "new-refresh-token", "Bearer", 3600, "someIdToken");
 
         _mockYahooApiClient.Setup(api => api.GetAccessTokenByRefreshToken("valid-refresh-token"))
             .ReturnsAsync(newAccessTokenResponse);

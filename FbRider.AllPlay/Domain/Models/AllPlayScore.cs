@@ -1,4 +1,4 @@
-﻿namespace FbRider.AllPlay.Domain.Models;
+namespace FbRider.AllPlay.Domain.Models;
 
 public class AllPlayScore
 { 
