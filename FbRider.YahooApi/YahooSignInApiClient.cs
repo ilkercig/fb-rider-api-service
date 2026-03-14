@@ -54,7 +54,7 @@ public class YahooSignInApiClient(HttpClient httpClient, IConfiguration configur
         return new UserProfile(yahooUser.Email, yahooUser.Name, new Application.ProfileImages(yahooUser.ProfileImages.Image32, yahooUser.ProfileImages.Image64, yahooUser.ProfileImages.Image128));
     }
 
-    public async Task<T> GetAsync<T>(string url, string accessToken, Dictionary<string, string>? queryParams = null)
+    private async Task<T> GetAsync<T>(string url, string accessToken, Dictionary<string, string>? queryParams = null)
     {
         var queryBuilder = new QueryBuilder();
         if (queryParams != null)

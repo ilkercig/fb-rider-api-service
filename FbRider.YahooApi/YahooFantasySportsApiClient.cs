@@ -21,11 +21,10 @@ namespace FbRider.YahooApi
         public async Task<Game[]> GetUserGames(string accessToken)
         {
             var result = await GetFantasyContentAsync(accessToken, YahooApiUrls.UserGamesUrl);
-            if (result.Users == null)
+            if (result.Users == null || result.Users.Length == 0)
                 throw new YahooApiException(YahooApiErrorMessages.FantasyUserNotFound, YahooApiUrls.UserGamesUrl, YahooApiType.FantasySports);
-            if (result.Users.Single().Games == null) 
-                throw new YahooApiException(YahooApiErrorMessages.FantasyUserGamesNotFound, YahooApiUrls.UserGamesUrl, YahooApiType.FantasySports);
-            return result.Users.Single().Games;
+            
+            return result.Users.First().Games ?? [];
         }
 
         public async Task<Team> GetTeam(string accessToken, string teamKey)
@@ -50,7 +49,7 @@ namespace FbRider.YahooApi
         }
 
 
-        public async Task<FantasyContent> GetFantasyContentAsync(string accessToken, string url)
+        private async Task<FantasyContent> GetFantasyContentAsync(string accessToken, string url)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
